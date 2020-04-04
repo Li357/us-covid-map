@@ -5,21 +5,26 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "codegen": "npx apollo client:codegen --outputFlat --target=typescript types"
   },
   "dependencies": {
     "@apollo/client": "^3.0.0-beta.41",
     "@apollo/react-ssr": "^4.0.0-beta.1",
-    "graphql": "^15.0.0",
+    "d3": "^5.15.1",
     "isomorphic-unfetch": "^3.0.0",
     "next": "9.3.4",
     "react": "16.13.1",
-    "react-dom": "16.13.1"
+    "react-dom": "16.13.1",
+    "topojson-client": "^3.1.0"
   },
   "devDependencies": {
+    "@types/d3": "^5.7.2",
     "@types/node": "^13.11.0",
     "@types/react": "^16.9.32",
     "@types/react-dom": "^16.9.6",
+    "@types/topojson-client": "^3.0.0",
+    "apollo": "^2.26.0",
     "typescript": "^3.8.3"
   }
 }

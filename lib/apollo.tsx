@@ -5,7 +5,7 @@ import { ApolloProvider, ApolloClient, NormalizedCacheObject } from '@apollo/cli
 import { NextPageContext, NextPage } from 'next';
 import createApolloClient from '../apolloClient';
 
-interface NextPageContextWithApollo extends NextPageContext {
+export interface NextPageContextWithApollo extends NextPageContext {
   apolloClient: ApolloClient<NormalizedCacheObject> | null;
   apolloState: NormalizedCacheObject;
   ctx: NextPageContextApp;
