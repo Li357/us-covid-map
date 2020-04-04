@@ -8,8 +8,18 @@
     "start": "next start"
   },
   "dependencies": {
+    "@apollo/client": "^3.0.0-beta.41",
+    "@apollo/react-ssr": "^4.0.0-beta.1",
+    "graphql": "^15.0.0",
+    "isomorphic-unfetch": "^3.0.0",
     "next": "9.3.4",
     "react": "16.13.1",
     "react-dom": "16.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^13.11.0",
+    "@types/react": "^16.9.32",
+    "@types/react-dom": "^16.9.6",
+    "typescript": "^3.8.3"
   }
 }
