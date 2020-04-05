@@ -1,15 +1,17 @@
-import React from 'react';
+import { useMemo } from 'react';
 import { Region } from '../types';
 import Stat from './Stat';
+import Card from './Card';
+import LineChart from './LineChart';
+import { processTimeline } from '../utils/data';
 
 interface SidebarProps {
   selectedRegion: Region;
 }
 
 export default function Sidebar({ selectedRegion }: SidebarProps) {
-  if (!selectedRegion) {
-    return null;
-  }
+  const casesTimeline = useMemo(() => processTimeline(selectedRegion.timeline, 'cases'), [selectedRegion]);
+  const deathsTimeline = useMemo(() => processTimeline(selectedRegion.timeline, 'deaths'), [selectedRegion]);
 
   return (
     <div className="sidebar">
@@ -23,9 +25,15 @@ export default function Sidebar({ selectedRegion }: SidebarProps) {
         <Stat color="red" title="Cases" value={selectedRegion.cases.toLocaleString()} />
         <Stat color="gray" title="Deaths" value={selectedRegion.deaths.toLocaleString()} />
       </div>
+      <Card color="red">
+        <LineChart timeline={casesTimeline} width={375} height={200} />
+      </Card>
+      <Card color="gray">
+        <LineChart timeline={deathsTimeline} width={375} height={200} />
+      </Card>
       <style jsx>{`
         .sidebar {
-          flex: 0 0 400px;
+          flex: 0 0 450px;
           padding: 50px;
           display: flex;
           flex-direction: column;
@@ -47,6 +55,10 @@ export default function Sidebar({ selectedRegion }: SidebarProps) {
         }
       `}</style>
       <style jsx global>{`
+        .sidebar > .card {
+          margin: 5px 0;
+        }
+
         .stats > .stat {
           margin: 5px;
         }

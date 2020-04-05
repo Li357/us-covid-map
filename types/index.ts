@@ -1,8 +1,13 @@
 import { GeometryCollection, Objects } from 'topojson-specification';
 import { Feature, GeometryObject } from 'geojson';
 import { ValueFn } from 'd3';
-import { getAllCasesDeaths_states, getAllCasesDeaths_nation } from './getAllCasesDeaths';
-import { getCountyData_states_counties } from './getCountyData';
+import {
+  getAllCasesDeaths_states,
+  getAllCasesDeaths_nation,
+  getAllCasesDeaths_nation_timeline,
+  getAllCasesDeaths_states_timeline,
+} from './getAllCasesDeaths';
+import { getCountyData_states_counties, getCountyData_states_counties_timeline } from './getCountyData';
 
 export interface RegionProperties {
   name: string;
@@ -17,5 +22,10 @@ export interface TopologyObjects extends Objects {
 // full region (after lazy fetching)
 export type Region = getAllCasesDeaths_nation | getAllCasesDeaths_states | getCountyData_states_counties;
 export type MinimalRegion = Pick<Region, 'fips' | 'cases' | 'deaths' | '__typename'>;
+export type DayTotal =
+  | getAllCasesDeaths_nation_timeline
+  | getAllCasesDeaths_states_timeline
+  | getCountyData_states_counties_timeline;
+export type Timeline = DayTotal[];
 export type RegionFeature = Omit<Feature<GeometryObject, RegionProperties>, 'id'> & { id: string };
 export type MapMouseHandler = ValueFn<Element, RegionFeature, any>;
