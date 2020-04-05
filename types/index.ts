@@ -16,6 +16,6 @@ export interface TopologyObjects extends Objects {
 // properties of regions that are initially fetched, only represent cases and deaths and fips
 // full region (after lazy fetching)
 export type Region = getAllCasesDeaths_nation | getAllCasesDeaths_states | getCountyData_states_counties;
-export type MinimalRegion = Pick<Region, 'fips' | 'cases' | 'deaths'>;
+export type MinimalRegion = Pick<Region, 'fips' | 'cases' | 'deaths' | '__typename'>;
 export type RegionFeature = Omit<Feature<GeometryObject, RegionProperties>, 'id'> & { id: string };
 export type MapMouseHandler = ValueFn<Element, RegionFeature, any>;

@@ -1,11 +1,9 @@
 import React from 'react';
 import { Region } from '../types';
-// import Stat from './Stat';
-// import TimelineChart from './TimelineChart';
-// import { GetAllCases_states } from '../../types/GetAllCases';
+import Stat from './Stat';
 
 interface SidebarProps {
-  selectedRegion: Region | undefined;
+  selectedRegion: Region;
 }
 
 export default function Sidebar({ selectedRegion }: SidebarProps) {
@@ -13,25 +11,52 @@ export default function Sidebar({ selectedRegion }: SidebarProps) {
     return null;
   }
 
-  // const casesTimeline: [Date, number][] = (selectedRegion as GetAllCases_states).timeline.map(({ date, cases }) => [
-  //   new Date(date),
-  //   cases,
-  // ]);
-
   return (
-    <div>
-      <strong className="name">{selectedRegion?.name}</strong>
-      {/* <div className="stats">
-        <Stat className="red" title="Cases" value={selectedRegion?.cases || 0} />
-        <Stat className="gray" title="Deaths" value={selectedRegion?.deaths || 0} />
-      </div> */}
-      {/* <TimelineChart timeline={casesTimeline} width={300} height={300} /> */}
+    <div className="sidebar">
+      <div className="name">
+        <strong>{selectedRegion.name}</strong>
+        <span>
+          <strong>POPULATION:</strong> {selectedRegion.population.toLocaleString()}
+        </span>
+      </div>
+      <div className="stats">
+        <Stat color="red" title="Cases" value={selectedRegion.cases.toLocaleString()} />
+        <Stat color="gray" title="Deaths" value={selectedRegion.deaths.toLocaleString()} />
+      </div>
       <style jsx>{`
-        div {
+        .sidebar {
           flex: 0 0 400px;
           padding: 50px;
           display: flex;
           flex-direction: column;
+        }
+
+        .name {
+          display: flex;
+          flex-direction: column;
+          margin-bottom: 30px;
+        }
+
+        .name > span > strong {
+          font-size: 1rem;
+        }
+
+        .stats {
+          display: flex;
+          flex-direction: row;
+        }
+      `}</style>
+      <style jsx global>{`
+        .stats > .stat {
+          margin: 5px;
+        }
+
+        .stats > .stat:first-child {
+          margin-left: 0;
+        }
+
+        .stats > .stat:last-child {
+          margin-right: 0;
         }
       `}</style>
     </div>

@@ -8,11 +8,19 @@ interface ChoroplethProps {
   regions: Map<string, Region | MinimalRegion>;
   width: number;
   height: number;
-  onEnterRegion: (region?: Region | MinimalRegion) => void;
-  onExitRegion: (region?: Region | MinimalRegion) => void;
+  onEnterRegion: (region: Region | MinimalRegion) => void;
+  onExitRegion: (region: Region | MinimalRegion) => void;
+  onClickRegion: (region: Region | MinimalRegion) => void;
 }
 
-export default function Choropleth({ regions, width, height, onEnterRegion, onExitRegion }: ChoroplethProps) {
+export default function Choropleth({
+  regions,
+  width,
+  height,
+  onEnterRegion,
+  onExitRegion,
+  onClickRegion,
+}: ChoroplethProps) {
   const svgRef = useRef(null);
 
   const onMouseEnter: MapMouseHandler = (feature, i, nodes) => {
@@ -21,12 +29,16 @@ export default function Choropleth({ regions, width, height, onEnterRegion, onEx
         this.parentNode?.appendChild(this);
       })
       .attr('stroke', 'black');
-    onEnterRegion(regions.get(feature.id));
+    onEnterRegion(regions.get(feature.id)!);
   };
 
   const onMouseLeave: MapMouseHandler = (feature, i, nodes) => {
     select(nodes[i]).attr('stroke', null);
-    onExitRegion(regions.get(feature.id));
+    onExitRegion(regions.get(feature.id)!);
+  };
+
+  const onClick: MapMouseHandler = (feature) => {
+    onClickRegion(regions.get(feature.id)!);
   };
 
   useEffect(() => {
@@ -62,15 +74,16 @@ export default function Choropleth({ regions, width, height, onEnterRegion, onEx
         .attr('fill', 'transparent')
         .attr('d', path)
         .on('mouseenter', onMouseEnter)
-        .on('mouseleave', onMouseLeave);
+        .on('mouseleave', onMouseLeave)
+        .on('click', onClick);
     });
   }, [svgRef, width, height]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
-      <svg ref={svgRef} />
+      <svg className="choropleth" ref={svgRef} />
       <style jsx>{`
-        svg {
+        .choropleth {
           width: 100%;
         }
       `}</style>

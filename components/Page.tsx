@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import Head from 'next/head';
 
 interface PageProps {
   children: ReactNode;
@@ -7,6 +8,11 @@ interface PageProps {
 export default function Page({ children }: PageProps) {
   return (
     <>
+      <Head>
+        <title>US COVID-19 Map</title>
+        <link rel="icon" href="/favicon.ico" />
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet"></link>
+      </Head>
       {children}
       <style jsx global>{`
         html,

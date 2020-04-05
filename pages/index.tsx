@@ -1,41 +1,66 @@
 import { useState, useMemo } from 'react';
-import Head from 'next/head';
-import { useQuery } from '@apollo/client';
+import { useQuery, useLazyQuery } from '@apollo/client';
 import Page from '../components/Page';
 import Choropleth from '../components/Choropleth';
 import Sidebar from '../components/Sidebar';
 import { withApollo } from '../utils/apollo';
 import { createRegionMap } from '../utils/data';
-import { Region } from '../types';
-import { GET_ALL_CASES_DEATHS } from '../queries';
+import { Region, MinimalRegion } from '../types';
+import { GET_ALL_CASES_DEATHS, GET_COUNTY_DATA_BY_STATE } from '../queries';
+import { getAllCasesDeaths } from '../types/getAllCasesDeaths';
+import { getCountyDataVariables, getCountyData } from '../types/getCountyData';
 
 function Index() {
-  const { loading, data } = useQuery(GET_ALL_CASES_DEATHS);
-  const [selectedRegion, setSelectedRegion] = useState<Region | undefined>(data?.nation);
-  const regionMap = useMemo(() => (data ? createRegionMap(data) : null), [data]);
+  const { loading: loadingCasesDeaths, data: allCasesDeaths } = useQuery<getAllCasesDeaths>(GET_ALL_CASES_DEATHS);
+  const [loadState, { loading: loadingState, data: stateData }] = useLazyQuery<getCountyData, getCountyDataVariables>(
+    GET_COUNTY_DATA_BY_STATE,
+  );
+  const [selectedRegion, setSelectedRegion] = useState<Region | undefined>(allCasesDeaths?.nation);
 
-  if (loading || !data) {
+  const regionMap: Map<string, MinimalRegion | Region> | null = useMemo(() => {
+    if (allCasesDeaths && stateData) {
+      stateData.states.forEach((state) => {
+        state.counties.forEach((county) => {
+          regionMap?.set(county.fips, county);
+        });
+      });
+    } else if (loadingState) {
+      return regionMap;
+    }
+    return allCasesDeaths ? createRegionMap(allCasesDeaths) : null;
+  }, [allCasesDeaths, stateData]);
+
+  const setSelectedRegionAndPreload = (region: MinimalRegion | Region) => {
+    // if we reach here, the hovered area is going to be a region with fully loaded data (as it has a sidebar to show up in)
+    setSelectedRegion(region as Region);
+
+    // currently this only preloads states
+    if (region.__typename === 'State') {
+      loadState({ variables: { stateFips: region.fips } });
+    }
+  };
+  const clearSelectedRegion = () => setSelectedRegion(allCasesDeaths?.nation);
+  const focusRegion = () => {};
+
+  if (loadingCasesDeaths || !allCasesDeaths) {
     return null;
   }
 
   return (
     <Page>
-      <div>
-        <Head>
-          <title>US COVID-19 Map</title>
-          <link rel="icon" href="/favicon.ico" />
-        </Head>
+      <div className="container">
         <Choropleth
           regions={regionMap!}
           width={960}
           height={600}
-          onEnterRegion={(region) => setSelectedRegion(region as Region) /* guaranteed to be full region */}
-          onExitRegion={() => setSelectedRegion(data?.nation)}
+          onEnterRegion={setSelectedRegionAndPreload}
+          onExitRegion={clearSelectedRegion}
+          onClickRegion={focusRegion}
         />
-        <Sidebar selectedRegion={selectedRegion} />
+        <Sidebar selectedRegion={selectedRegion!} />
       </div>
       <style jsx>{`
-        div {
+        .container {
           display: flex;
           align-items: stretch;
           height: 100%;
