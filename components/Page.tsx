@@ -6,7 +6,7 @@ interface PageProps {
 
 export default function Page({ children }: PageProps) {
   return (
-    <main>
+    <>
       {children}
       <style jsx global>{`
         html,
@@ -27,7 +27,11 @@ export default function Page({ children }: PageProps) {
         strong {
           font-size: 2rem;
         }
+
+        #__next {
+          height: 100%;
+        }
       `}</style>
-    </main>
+    </>
   );
 }

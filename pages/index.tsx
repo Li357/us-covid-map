@@ -1,57 +1,46 @@
+import { useState, useMemo } from 'react';
 import Head from 'next/head';
-import { gql, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import Page from '../components/Page';
 import Choropleth from '../components/Choropleth';
-import { withApollo } from '../lib/apollo';
-import { createRegionMap } from '../lib/data';
-
-const GET_ALL_CASES = gql`
-  query getAllCases {
-    states {
-      fips
-      name
-      population
-      cases
-      deaths
-      timeline {
-        date
-        cases
-        deaths
-      }
-      counties {
-        fips
-        cases
-      }
-    }
-    nation {
-      fips
-      name
-      population
-      cases
-      deaths
-      timeline {
-        date
-        cases
-        deaths
-      }
-    }
-  }
-`;
+import Sidebar from '../components/Sidebar';
+import { withApollo } from '../utils/apollo';
+import { createRegionMap } from '../utils/data';
+import { Region } from '../types';
+import { GET_ALL_CASES_DEATHS } from '../queries';
 
 function Index() {
-  const { loading, data } = useQuery(GET_ALL_CASES);
+  const { loading, data } = useQuery(GET_ALL_CASES_DEATHS);
+  const [selectedRegion, setSelectedRegion] = useState<Region | undefined>(data?.nation);
+  const regionMap = useMemo(() => (data ? createRegionMap(data) : null), [data]);
+
   if (loading || !data) {
     return null;
   }
 
-  const regionMap = createRegionMap(data!.nation, data!.states);
   return (
     <Page>
-      <Head>
-        <title>US COVID-19 Map</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <Choropleth regions={regionMap} width={960} height={600} onEnterRegion={() => {}} onExitRegion={() => {}} />
+      <div>
+        <Head>
+          <title>US COVID-19 Map</title>
+          <link rel="icon" href="/favicon.ico" />
+        </Head>
+        <Choropleth
+          regions={regionMap!}
+          width={960}
+          height={600}
+          onEnterRegion={(region) => setSelectedRegion(region as Region) /* guaranteed to be full region */}
+          onExitRegion={() => setSelectedRegion(data?.nation)}
+        />
+        <Sidebar selectedRegion={selectedRegion} />
+      </div>
+      <style jsx>{`
+        div {
+          display: flex;
+          align-items: stretch;
+          height: 100%;
+        }
+      `}</style>
     </Page>
   );
 }

@@ -7,7 +7,6 @@ export default function createApolloClient(initialState: NormalizedCacheObject, 
     ssrMode: Boolean(ctx),
     link: new HttpLink({
       uri: 'https://covid-nyt-api.now.sh/graphql',
-      credentials: 'same-origin',
       fetch,
     }),
     cache: new InMemoryCache().restore(initialState),

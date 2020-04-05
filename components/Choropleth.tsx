@@ -1,24 +1,19 @@
 import { useEffect, useRef } from 'react';
 import { select, geoAlbersUsa, geoPath, scaleThreshold, range, schemeReds } from 'd3';
 import { feature } from 'topojson-client';
-import us from '../lib/map';
-import { MapMouseHandler, RegionFeature, Region } from '../types';
+import us from '../utils/map';
+import { MapMouseHandler, RegionFeature, Region, MinimalRegion } from '../types';
 
 interface ChoroplethProps {
-  regions: Map<string, Region>;
+  regions: Map<string, Region | MinimalRegion>;
   width: number;
   height: number;
-  onEnterRegion: (region?: Region) => void;
-  onExitRegion: (region?: Region) => void;
+  onEnterRegion: (region?: Region | MinimalRegion) => void;
+  onExitRegion: (region?: Region | MinimalRegion) => void;
 }
 
 export default function Choropleth({ regions, width, height, onEnterRegion, onExitRegion }: ChoroplethProps) {
   const svgRef = useRef(null);
-
-  const onMouseLeave: MapMouseHandler = (feature, i, nodes) => {
-    select(nodes[i]).attr('stroke', null);
-    onExitRegion(regions.get(feature.id));
-  };
 
   const onMouseEnter: MapMouseHandler = (feature, i, nodes) => {
     select(nodes[i])
@@ -27,6 +22,11 @@ export default function Choropleth({ regions, width, height, onEnterRegion, onEx
       })
       .attr('stroke', 'black');
     onEnterRegion(regions.get(feature.id));
+  };
+
+  const onMouseLeave: MapMouseHandler = (feature, i, nodes) => {
+    select(nodes[i]).attr('stroke', null);
+    onExitRegion(regions.get(feature.id));
   };
 
   useEffect(() => {
@@ -66,5 +66,14 @@ export default function Choropleth({ regions, width, height, onEnterRegion, onEx
     });
   }, [svgRef, width, height]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <svg className="choropleth" ref={svgRef} />;
+  return (
+    <>
+      <svg ref={svgRef} />
+      <style jsx>{`
+        svg {
+          width: 100%;
+        }
+      `}</style>
+    </>
+  );
 }

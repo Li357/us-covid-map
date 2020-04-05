@@ -4,51 +4,52 @@
 // This file was automatically generated and should not be edited.
 
 // ====================================================
-// GraphQL query operation: getAllCases
+// GraphQL query operation: getAllCasesDeaths
 // ====================================================
 
-export interface getAllCases_states_timeline {
+export interface getAllCasesDeaths_states_timeline {
   __typename: "DayTotal";
   date: string;
   cases: number;
   deaths: number;
 }
 
-export interface getAllCases_states_counties {
+export interface getAllCasesDeaths_states_counties {
   __typename: "County";
   fips: string;
   cases: number;
+  deaths: number;
 }
 
-export interface getAllCases_states {
+export interface getAllCasesDeaths_states {
   __typename: "State";
   fips: string;
   name: string;
   population: number;
   cases: number;
   deaths: number;
-  timeline: getAllCases_states_timeline[];
-  counties: getAllCases_states_counties[];
+  timeline: getAllCasesDeaths_states_timeline[];
+  counties: getAllCasesDeaths_states_counties[];
 }
 
-export interface getAllCases_nation_timeline {
+export interface getAllCasesDeaths_nation_timeline {
   __typename: "DayTotal";
   date: string;
   cases: number;
   deaths: number;
 }
 
-export interface getAllCases_nation {
+export interface getAllCasesDeaths_nation {
   __typename: "Nation";
   fips: string;
   name: string;
   population: number;
   cases: number;
   deaths: number;
-  timeline: getAllCases_nation_timeline[];
+  timeline: getAllCasesDeaths_nation_timeline[];
 }
 
-export interface getAllCases {
-  states: getAllCases_states[];
-  nation: getAllCases_nation;
+export interface getAllCasesDeaths {
+  states: getAllCasesDeaths_states[];
+  nation: getAllCasesDeaths_nation;
 }
