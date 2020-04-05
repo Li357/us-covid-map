@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useLazyQuery } from '@apollo/client';
 import Page from '../components/Page';
 import Choropleth from '../components/Choropleth';
@@ -15,7 +15,7 @@ function Index() {
   const [loadState, { loading: loadingState, data: stateData }] = useLazyQuery<getCountyData, getCountyDataVariables>(
     GET_COUNTY_DATA_BY_STATE,
   );
-  const [selectedRegion, setSelectedRegion] = useState<Region | undefined>(allCasesDeaths?.nation);
+  const [selectedRegion, setSelectedRegion] = useState<Region | undefined>(undefined);
 
   const regionMap: Map<string, MinimalRegion | Region> | null = useMemo(() => {
     if (allCasesDeaths && stateData) {
@@ -41,6 +41,12 @@ function Index() {
   };
   const clearSelectedRegion = () => setSelectedRegion(allCasesDeaths?.nation);
   const focusRegion = () => {};
+
+  useEffect(() => {
+    if (allCasesDeaths && !selectedRegion) {
+      setSelectedRegion(allCasesDeaths?.nation);
+    }
+  }, [allCasesDeaths]);
 
   if (loadingCasesDeaths || !allCasesDeaths) {
     return null;
