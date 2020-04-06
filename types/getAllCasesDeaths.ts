@@ -30,6 +30,7 @@ export interface getAllCasesDeaths_states {
   deaths: number;
   timeline: getAllCasesDeaths_states_timeline[];
   counties: getAllCasesDeaths_states_counties[];
+  lastUpdated: string;
 }
 
 export interface getAllCasesDeaths_nation_timeline {
@@ -47,6 +48,7 @@ export interface getAllCasesDeaths_nation {
   cases: number;
   deaths: number;
   timeline: getAllCasesDeaths_nation_timeline[];
+  lastUpdated: string;
 }
 
 export interface getAllCasesDeaths {

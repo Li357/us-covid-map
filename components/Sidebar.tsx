@@ -1,30 +1,37 @@
 import { useMemo, useState } from 'react';
-import { Region, MinimalRegion } from '../types';
+import { timeFormat } from 'd3';
+import { Region } from '../types';
 import Stat from './Stat';
 import Card from './Card';
 import LineChart from './LineChart';
 import { processTimeline, formatNumber } from '../utils/data';
+import arrow from '../public/arrow.svg';
 
 interface SidebarProps {
-  selectedRegion?: Region;
+  selectedRegion: Region;
+  regionInView: Region;
+  onBlur: () => void;
 }
 
-export default function Sidebar({ selectedRegion }: SidebarProps) {
+export default function Sidebar({ selectedRegion, regionInView, onBlur }: SidebarProps) {
   // TODO: add loading vis
-  if (!selectedRegion || !selectedRegion.timeline) {
+  if (!selectedRegion.timeline) {
     return null;
   }
 
-  console.log(selectedRegion);
   const data = selectedRegion.timeline.slice(0, 30); // only take first 30 days of data
   const [selectedIndex, setSelectedIndex] = useState(data.length - 1);
   const casesTimeline = useMemo(() => processTimeline(data, 'cases'), [selectedRegion]);
   const deathsTimeline = useMemo(() => processTimeline(data, 'deaths'), [selectedRegion]);
+  const formatDateTime = timeFormat('%b %e, %I:%M %p');
 
   return (
     <div className="sidebar">
       <div className="name">
-        <strong>{selectedRegion.name}</strong>
+        <div>
+          <strong>{selectedRegion.name}</strong>
+          {regionInView.fips.length === 2 && <img className="back" src={arrow} onClick={onBlur} />}
+        </div>
         <span>
           <strong>POPULATION:</strong> {formatNumber(selectedRegion.population)}
         </span>
@@ -53,6 +60,7 @@ export default function Sidebar({ selectedRegion }: SidebarProps) {
           height={200}
         />
       </Card>
+      <span>Last updated {formatDateTime(new Date(selectedRegion.lastUpdated))}</span>
       <style jsx>{`
         .sidebar {
           flex: 0 0 450px;
@@ -67,6 +75,12 @@ export default function Sidebar({ selectedRegion }: SidebarProps) {
           margin-bottom: 30px;
         }
 
+        .name > div {
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+        }
+
         .name > span > strong {
           font-size: 1rem;
         }
@@ -74,6 +88,10 @@ export default function Sidebar({ selectedRegion }: SidebarProps) {
         .stats {
           display: flex;
           flex-direction: row;
+        }
+
+        .back {
+          width: 10%;
         }
       `}</style>
       <style jsx global>{`

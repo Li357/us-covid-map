@@ -18,6 +18,7 @@ export const GET_ALL_CASES_DEATHS = gql`
         cases
         deaths
       }
+      lastUpdated
     }
     nation {
       fips
@@ -30,6 +31,7 @@ export const GET_ALL_CASES_DEATHS = gql`
         cases
         deaths
       }
+      lastUpdated
     }
   }
 `;
@@ -48,6 +50,7 @@ export const GET_COUNTY_DATA_BY_STATE = gql`
           cases
           deaths
         }
+        lastUpdated
       }
     }
   }

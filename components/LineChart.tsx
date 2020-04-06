@@ -114,9 +114,9 @@ export default function LineChart({ name, timeline, width, height, onMouseMove, 
       return () => {
         path.remove();
         dotsGroup.remove();
-        onMouseMove(0);
         xAxis.remove();
         yAxis.remove();
+        onMouseMove(0);
       };
     }
     return () => {
@@ -131,7 +131,7 @@ export default function LineChart({ name, timeline, width, height, onMouseMove, 
     const info = svg.append('g').attr('dominant-baseline', 'hanging');
     info.append('text').classed('title', true).attr('x', 0).attr('y', 0).attr('fill', color).text('No data');
 
-    if (timeline.length > 0) {
+    if (timeline.length > 0 && timeline[index]) {
       const [x1, y1] = timeline[index];
       info.select('.title').text(`${formatNumber(y1)} ${name}`);
       info.append('text').classed('date', true).text(formatDate(x1)).attr('fill', color).attr('x', 0).attr('y', 20);

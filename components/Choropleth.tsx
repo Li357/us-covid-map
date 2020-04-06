@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import {
   select,
   geoAlbersUsa,
@@ -7,10 +7,11 @@ import {
   range,
   schemeReds,
   zoom,
-  event,
   zoomIdentity,
-  mouse,
   Selection,
+  BaseType,
+  event,
+  zoomTransform,
 } from 'd3';
 import { feature } from 'topojson-client';
 import us from '../utils/map';
@@ -18,116 +19,70 @@ import { MapMouseHandler, RegionFeature, Region, MinimalRegion } from '../types'
 
 interface ChoroplethProps {
   regions: Map<string, Region | MinimalRegion>;
+  regionInView: Region;
   width: number;
   height: number;
   onEnterRegion: (region: Region | MinimalRegion) => void;
   onClickRegion: (region: Region | MinimalRegion) => void;
-  onClickOutside: (view: 'nation' | 'state') => void;
+  onClickOutside: () => void;
+  onFocusState: (region: Region | null) => void;
 }
 
 export default function Choropleth({
   regions,
+  regionInView,
   width,
   height,
   onEnterRegion,
   onClickRegion,
   onClickOutside,
+  onFocusState,
 }: ChoroplethProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
-  // this isn't a part of state because the view is managed by d3, not react
-  // hacky since this relies on the fact the component does not rerender
-  // in the future maybe refactor this component to fully integrate into react ecosystem
-  let view: 'nation' | 'state' = 'nation';
+  const projection = geoAlbersUsa().fitSize([width, height], feature(us, us.objects.counties));
+  const path = geoPath(projection);
 
-  useEffect(() => {
-    /* handlers and utility functions */
-    const handleClickRegion: MapMouseHandler = (feature, i, nodes) => {
-      svg.selectAll('.focused').classed('focused', false);
+  const handleClickRegion: MapMouseHandler = useCallback(
+    (feature, i, nodes) => {
+      select(svgRef.current).selectAll('.focused').classed('focused', false);
       select(nodes[i])
         .classed('focused', true)
-        .each(function () {
-          this.parentNode?.appendChild(this);
+        .each((_datum, i, nodes) => {
+          nodes[i].parentNode?.appendChild(nodes[i]);
         });
       onClickRegion(regions.get(feature.id)!);
-    };
+    },
+    [svgRef, onClickRegion, regions],
+  );
 
-    const handleClickOutside = () => {
-      svg.selectAll('.focused').classed('focused', false);
-      onClickOutside(view);
-    };
+  const handleClickOutside = useCallback(() => {
+    select(svgRef.current).selectAll('.focused').classed('focused', false);
+    onClickOutside();
+  }, [svgRef, onClickOutside]);
 
-    const handleEnterRegion: MapMouseHandler = (feature, i, nodes) => {
+  const handleEnterRegion: MapMouseHandler = useCallback(
+    (feature, i, nodes) => {
       select(nodes[i]).classed('entered', true);
       onEnterRegion(regions.get(feature.id)!);
-    };
+    },
+    [regions, onEnterRegion],
+  );
 
-    const handleLeaveRegion: MapMouseHandler = (_feature, i, nodes) => {
-      select(nodes[i]).classed('entered', false);
-    };
+  const handleLeaveRegion: MapMouseHandler = (_feature, i, nodes) => {
+    select(nodes[i]).classed('entered', false);
+  };
 
-    const zoomOnState = (state: RegionFeature) => {
-      const [[x0, y0], [x1, y1]] = path.bounds(state);
-      svg
-        .transition()
-        .duration(750)
-        .call(
-          stateZoom.transform,
-          zoomIdentity
-            .translate(width / 2, height / 2)
-            .scale(Math.min(8, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height)))
-            .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
-          mouse(svg.node()!),
-        );
-    };
+  const handleDoubleClickState: MapMouseHandler = useCallback(
+    (feature, i, nodes) => {
+      select(nodes[i]).classed('in-view', true);
+      onFocusState(regions.get(feature.id)! as Region);
+    },
+    [regions, onFocusState],
+  );
 
-    const blurOtherStates = (state: RegionFeature) => {
-      states
-        .selectAll<Element, RegionFeature>('g')
-        .filter((feature) => !feature.id.startsWith(state.id))
-        .transition()
-        .duration(750)
-        .style('opacity', 0)
-        .on('end', (_datum, i, nodes) => select(nodes[i]).attr('visibility', 'hidden'));
-    };
-
-    const attachCountyMouseHandlers = (stateGroup: Selection<SVGGElement, RegionFeature, null, undefined>) => {
-      stateGroup.select('.state').remove();
-      stateGroup
-        .classed('focused', false)
-        .on('mouseenter', null)
-        .on('mouseleave', null)
-        .on('click', null)
-        .select('g')
-        .attr('stroke-width', 0.5)
-        .selectAll<SVGPathElement, RegionFeature>('path')
-        .on('mouseenter', handleEnterRegion)
-        .on('mouseleave', handleLeaveRegion)
-        .on('click', handleClickRegion);
-    };
-
-    const handleDoubleClickState: MapMouseHandler<SVGGElement> = (feature, i, nodes) => {
-      const stateGroup = select<SVGGElement, RegionFeature>(nodes[i]).classed('entered', false);
-      zoomOnState(feature);
-      blurOtherStates(feature);
-      attachCountyMouseHandlers(stateGroup);
-      view = 'state';
-    };
-
-    const handleZoom = () => states.attr('transform', event.transform);
-
-    /* choropleth drawing */
-    const stateZoom = zoom<SVGSVGElement, undefined>().scaleExtent([1, 8]).on('zoom', handleZoom);
-    const projection = geoAlbersUsa().fitSize([width, height], feature(us, us.objects.counties));
-    const path = geoPath(projection);
+  useEffect(() => {
     const color = scaleThreshold<number, string>().domain(range(1, 400, 50)).range(schemeReds[9]);
-    const svg = select<SVGSVGElement, undefined>(svgRef.current!).attr('viewBox', `0 0 ${width} ${height}`);
-    svg
-      .call(stateZoom)
-      .on('wheel.zoom', null)
-      .on('mousewheel.zoom', null)
-      .on('mousedown.zoom', null)
-      .on('dblclick.zoom', null);
-
+    const svg = select(svgRef.current).attr('viewBox', `0 0 ${width} ${height}`);
     svg
       .append('rect')
       .classed('outside', true)
@@ -146,7 +101,7 @@ export default function Choropleth({
         .on('click', handleClickRegion)
         .on('dblclick', handleDoubleClickState);
 
-      const counties = stateGroup.append('g').attr('stroke-width', 0);
+      const counties = stateGroup.append('g').classed('counties', true).attr('stroke-width', 0);
       us.objects.counties.geometries.forEach((county) => {
         if ((county.id as string).startsWith(state.id as string)) {
           counties
@@ -160,6 +115,109 @@ export default function Choropleth({
       stateGroup.append('path').datum(stateFeature).attr('class', 'state').attr('d', path);
     });
   }, [svgRef, width, height]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!svgRef.current) {
+      return;
+    }
+
+    const handleZoom = () => states.attr('transform', event.transform);
+    const stateZoom = zoom<SVGSVGElement, undefined>().scaleExtent([1, 8]).on('zoom', handleZoom);
+    const svg = select<SVGSVGElement, undefined>(svgRef.current);
+    const states = svg.selectAll('.states');
+    svg
+      .call(stateZoom)
+      .on('wheel.zoom', null)
+      .on('mousewheel.zoom', null)
+      .on('mousedown.zoom', null)
+      .on('dblclick.zoom', null);
+
+    const zoomOnState = (state: RegionFeature) => {
+      const [[x0, y0], [x1, y1]] = path.bounds(state);
+      svg
+        .transition()
+        .duration(750)
+        .call(
+          stateZoom.transform,
+          zoomIdentity
+            .translate(width / 2, height / 2)
+            .scale(Math.min(8, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height)))
+            .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
+        );
+    };
+
+    const blurOtherStates = (state: RegionFeature) => {
+      states
+        .selectAll<Element, RegionFeature>('g')
+        .filter((feature) => !feature.id.startsWith(state.id))
+        .transition()
+        .duration(750)
+        .style('opacity', 0)
+        .on('end', (_datum, i, nodes) => select(nodes[i]).attr('visibility', 'hidden'));
+    };
+
+    const attachCountyMouseHandlers = (stateGroup: Selection<SVGGElement, RegionFeature, BaseType, unknown>) => {
+      stateGroup.select('.state').attr('visibility', 'hidden');
+      stateGroup
+        .classed('focused', false)
+        .on('mouseenter', null)
+        .on('mouseleave', null)
+        .on('click', null)
+        .select('.counties')
+        .attr('stroke-width', 0.5)
+        .selectAll<SVGPathElement, RegionFeature>('path')
+        .on('mouseenter', handleEnterRegion)
+        .on('mouseleave', handleLeaveRegion)
+        .on('click', handleClickRegion);
+    };
+
+    const unblurOtherStates = () => {
+      states
+        .selectAll<Element, RegionFeature>('g')
+        .transition()
+        .duration(750)
+        .style('opacity', 1)
+        .attr('visibility', 'visible');
+    };
+
+    const resetZoom = () => {
+      svg
+        .transition()
+        .duration(750)
+        .call(stateZoom.transform, zoomIdentity, zoomTransform(svg.node()!).invert([width / 2, height / 2]));
+    };
+
+    const reattachStateMouseHandlers = (stateGroup: Selection<SVGGElement, RegionFeature, BaseType, unknown>) => {
+      stateGroup
+        .classed('in-view', false)
+        .select<SVGPathElement>('.state')
+        .attr('visibility', 'visible')
+        .on('mouseenter', handleEnterRegion)
+        .on('mouseleave', handleLeaveRegion)
+        .on('click', handleClickRegion);
+      stateGroup
+        .select('.counties')
+        .attr('stroke-width', 0)
+        .selectAll('path')
+        .on('mouseenter', null)
+        .on('mouseleave', null)
+        .on('click', null);
+    };
+
+    const inStateView = regionInView.fips.length === 2;
+    const stateGroup = states.selectAll<SVGGElement, RegionFeature>('.in-view').classed('entered', false);
+    if (inStateView) {
+      const feature = stateGroup.datum();
+      zoomOnState(feature);
+      blurOtherStates(feature);
+      attachCountyMouseHandlers(stateGroup);
+    } else {
+      unblurOtherStates();
+      resetZoom();
+      reattachStateMouseHandlers(stateGroup);
+      onFocusState(null);
+    }
+  }, [svgRef, regionInView]);
 
   return (
     <>

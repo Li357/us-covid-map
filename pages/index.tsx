@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@apollo/client';
 import Page from '../components/Page';
 import Choropleth from '../components/Choropleth';
@@ -17,6 +17,7 @@ function Index() {
     GET_ALL_CASES_DEATHS,
   );
   const [selectedRegion, setSelectedRegion] = useState<Region | undefined>(undefined);
+  const [regionInView, setRegionInView] = useState<Region | undefined>(undefined);
   const [regionMap, addStates, addCounties] = useRegionMap();
 
   const preloadStateData = async (region: MinimalRegion | Region) => {
@@ -31,23 +32,28 @@ function Index() {
     }
   };
 
-  const clearSelectedRegion = (view: 'nation' | 'state') => {
-    setSelectedRegion(
-      (prevSelectedRegion) =>
-        regionMap.get(
-          view === 'state' && prevSelectedRegion ? prevSelectedRegion?.fips.slice(0, 2) : NATION_FIPS,
-        ) as Region,
-    );
+  const clearSelectedRegion = () => {
+    setSelectedRegion((prevSelectedRegion) => {
+      const inStateView = prevSelectedRegion && regionInView && regionInView.fips.length === 2;
+      return regionMap.get(inStateView ? prevSelectedRegion!.fips.slice(0, 2) : NATION_FIPS) as Region;
+    });
+  };
+
+  const handleFocusAndBlur = (region: Region | null) => {
+    const inNationView = region === null;
+    const nextRegionInView = (inNationView ? regionMap.get(NATION_FIPS) : region) as Region;
+    setRegionInView(nextRegionInView);
   };
 
   useEffect(() => {
     if (allCasesDeaths && !selectedRegion) {
-      setSelectedRegion(allCasesDeaths?.nation);
+      setSelectedRegion(allCasesDeaths.nation);
+      setRegionInView(allCasesDeaths.nation);
       addStates(allCasesDeaths);
     }
   }, [allCasesDeaths, selectedRegion]);
 
-  if (loadingCasesDeaths || !allCasesDeaths || !selectedRegion) {
+  if (loadingCasesDeaths || !allCasesDeaths || !selectedRegion || !regionInView) {
     return null;
   }
 
@@ -56,13 +62,19 @@ function Index() {
       <div className="container">
         <Choropleth
           regions={regionMap}
+          regionInView={regionInView}
           width={960}
           height={600}
           onEnterRegion={preloadStateData}
           onClickRegion={(region) => setSelectedRegion(region as Region)}
           onClickOutside={clearSelectedRegion}
+          onFocusState={handleFocusAndBlur}
         />
-        <Sidebar selectedRegion={selectedRegion} />
+        <Sidebar
+          selectedRegion={selectedRegion}
+          regionInView={regionInView}
+          onBlur={() => setRegionInView(regionMap.get(NATION_FIPS) as Region)}
+        />
       </div>
       <style jsx>{`
         .container {

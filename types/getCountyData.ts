@@ -22,6 +22,7 @@ export interface getCountyData_states_counties {
   cases: number;
   deaths: number;
   timeline: getCountyData_states_counties_timeline[];
+  lastUpdated: string;
 }
 
 export interface getCountyData_states {
