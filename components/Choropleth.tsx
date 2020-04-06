@@ -1,5 +1,17 @@
 import { useEffect, useRef } from 'react';
-import { select, geoAlbersUsa, geoPath, scaleThreshold, range, schemeReds, zoom, event, zoomIdentity, mouse } from 'd3';
+import {
+  select,
+  geoAlbersUsa,
+  geoPath,
+  scaleThreshold,
+  range,
+  schemeReds,
+  zoom,
+  event,
+  zoomIdentity,
+  mouse,
+  ValueFn,
+} from 'd3';
 import { feature } from 'topojson-client';
 import us from '../utils/map';
 import { MapMouseHandler, RegionFeature, Region, MinimalRegion } from '../types';
@@ -9,18 +21,10 @@ interface ChoroplethProps {
   width: number;
   height: number;
   onEnterRegion: (region: Region | MinimalRegion) => void;
-  onExitRegion: (region: Region | MinimalRegion) => void;
-  onClickRegion: (region: Region | MinimalRegion) => void;
+  onExitMap: () => void;
 }
 
-export default function Choropleth({
-  regions,
-  width,
-  height,
-  onEnterRegion,
-  onExitRegion,
-  onClickRegion,
-}: ChoroplethProps) {
+export default function Choropleth({ regions, width, height, onEnterRegion, onExitMap }: ChoroplethProps) {
   const svgRef = useRef(null);
 
   const onMouseEnter: MapMouseHandler = (feature, i, nodes) => {
@@ -32,9 +36,8 @@ export default function Choropleth({
     onEnterRegion(regions.get(feature.id)!);
   };
 
-  const onMouseLeave: MapMouseHandler = (feature, i, nodes) => {
+  const onMouseLeave: MapMouseHandler = (_feature, i, nodes) => {
     select(nodes[i]).attr('stroke', null);
-    onExitRegion(regions.get(feature.id)!);
   };
 
   useEffect(() => {
@@ -42,8 +45,8 @@ export default function Choropleth({
     const path = geoPath(projection);
     const color = scaleThreshold<number, string>().domain(range(1, 400, 50)).range(schemeReds[9]);
 
-    const onClick: MapMouseHandler = (feature) => {
-      const [[x0, y0], [x1, y1]] = path.bounds(feature);
+    const zoomOnState = (state: RegionFeature) => {
+      const [[x0, y0], [x1, y1]] = path.bounds(state);
       svg
         .transition()
         .duration(750)
@@ -55,19 +58,38 @@ export default function Choropleth({
             .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
           mouse(svg.node()!),
         );
+    };
+    const blurOtherStates = (state: RegionFeature) => {
       states
-        .selectAll('g')
-        .filter((d) => !d.id.startsWith(feature.id))
+        .selectAll<Element, RegionFeature>('g')
+        .filter((d) => !d.id.startsWith(state.id))
         .transition()
         .duration(750)
-        .style('opacity', 0.5);
-
-      onClickRegion(regions.get(feature.id)!);
+        .style('opacity', 0)
+        .style('visibility', 'hidden');
+    };
+    const attachCountyMouseHandlers = (state: Element) => {
+      const stateGroup = select(state);
+      stateGroup.select('.state').remove();
+      stateGroup
+        .on('click', null)
+        .on('mouseenter', null)
+        .on('mouseleave', null)
+        .select('g')
+        .attr('stroke', 'white')
+        .attr('stroke-width', 0.5)
+        .selectAll('path')
+        .on('mouseenter', onMouseEnter)
+        .on('mouseleave', onMouseLeave);
     };
 
-    const onZoom = () => {
-      g.attr('transform', event.transform);
+    const onClick: MapMouseHandler = (feature, i, nodes) => {
+      zoomOnState(feature);
+      blurOtherStates(feature);
+      attachCountyMouseHandlers(nodes[i]);
     };
+
+    const onZoom = () => g.attr('transform', event.transform);
     const stateZoom = zoom().scaleExtent([1, 8]).on('zoom', onZoom);
 
     const svg = select(svgRef.current).attr('viewBox', `0 0 ${width} ${height}`);
@@ -77,9 +99,10 @@ export default function Choropleth({
     const states = g
       .append('g')
       .attr('stroke', 'white')
-      .attr('stroke-width', 1.5)
+      .attr('stroke-width', 2)
       .attr('stroke-linejoin', 'round')
-      .attr('stroke-linecap', 'round');
+      .attr('stroke-linecap', 'round')
+      .on('mouseleave', onExitMap);
     us.objects.states.geometries.forEach((state) => {
       const stateGroup = states
         .append('g')
@@ -103,7 +126,8 @@ export default function Choropleth({
         .append('path')
         .datum(feature(us, state) as RegionFeature)
         .attr('fill', 'transparent')
-        .attr('d', path);
+        .attr('d', path)
+        .attr('class', 'state');
     });
   }, [svgRef, width, height]); // eslint-disable-line react-hooks/exhaustive-deps
 

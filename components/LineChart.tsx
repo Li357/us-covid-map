@@ -1,5 +1,17 @@
 import { useRef, useEffect } from 'react';
-import { select, axisBottom, scaleLinear, scaleTime, line, axisRight, max, timeFormat, extent, timeWeek } from 'd3';
+import {
+  select,
+  axisBottom,
+  scaleLinear,
+  scaleTime,
+  line,
+  axisRight,
+  max,
+  timeFormat,
+  extent,
+  timeWeek,
+  format,
+} from 'd3';
 
 interface LineChartProps {
   timeline: [Date, number][];
@@ -14,7 +26,7 @@ export default function LineChart({ timeline, width, height }: LineChartProps) {
   useEffect(() => {
     const svg = select(svgRef.current).attr('viewBox', `0 0 ${width} ${height}`);
 
-    const [minX, maxX] = extent(timeline.slice(0, 30), ([date]) => date) as [Date, Date];
+    const [minX = new Date(), maxX = new Date()] = extent(timeline.slice(0, 30), ([date]) => date) as [Date, Date];
     maxX.setDate(maxX.getDate() + 1);
 
     const x = scaleTime()
@@ -38,36 +50,50 @@ export default function LineChart({ timeline, width, height }: LineChartProps) {
       .append('g')
       .attr('transform', `translate(${width - MARGIN}, 0)`)
       .attr('stroke-width', 2)
-      .call(axisRight(y).ticks(9, '~s'));
+      .call(axisRight(y).tickValues(y.ticks(10).filter(Number.isInteger)).tickFormat(format('~s')));
 
-    const dots = svg
-      .append('g')
-      .selectAll('circle')
-      .data(timeline)
-      .enter()
-      .append('circle')
-      .attr('fill', 'red')
-      .attr('r', 3)
-      .attr('cx', ([date]) => x(date))
-      .attr('cy', ([_date, data]) => y(data));
+    if (timeline.length > 0) {
+      const dots = svg
+        .append('g')
+        .selectAll('circle')
+        .data(timeline)
+        .enter()
+        .append('circle')
+        .attr('fill', 'red')
+        .attr('r', 3)
+        .attr('cx', ([date]) => x(date))
+        .attr('cy', ([_date, data]) => y(data));
 
-    const path = svg
-      .append('path')
-      .datum(timeline)
-      .attr('fill', 'none')
-      .attr('stroke', 'red')
-      .attr('stroke-width', 1.5)
-      .attr(
-        'd',
-        line<[Date, number]>()
-          .x(([date]) => x(date))
-          .y(([_date, data]) => y(data)),
-      );
+      const path = svg
+        .append('path')
+        .datum(timeline)
+        .attr('fill', 'none')
+        .attr('stroke', 'red')
+        .attr('stroke-width', 1.5)
+        .attr(
+          'd',
+          line<[Date, number]>()
+            .x(([date]) => x(date))
+            .y(([_date, data]) => y(data)),
+        );
+      return () => {
+        path.remove();
+        dots.remove();
+        xAxis.remove();
+        yAxis.remove();
+      };
+    }
+
+    const noData = svg
+      .append('text')
+      .text('No Data')
+      .attr('text-anchor', 'middle')
+      .attr('x', x(new Date()))
+      .attr('y', y(0));
     return () => {
-      path.remove();
-      dots.remove();
       xAxis.remove();
       yAxis.remove();
+      noData.remove();
     };
   }, [svgRef, width, height, timeline]);
 

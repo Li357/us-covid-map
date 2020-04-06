@@ -44,7 +44,7 @@
   dependencies:
     cross-fetch "3.0.4"
 
-"@apollo/client@^3.0.0-beta.24", "@apollo/client@^3.0.0-beta.41":
+"@apollo/client@^3.0.0-beta.23", "@apollo/client@^3.0.0-beta.24", "@apollo/client@^3.0.0-beta.41":
   version "3.0.0-beta.41"
   resolved "https://registry.yarnpkg.com/@apollo/client/-/client-3.0.0-beta.41.tgz#37769f95d4829f2af884e76442401a31ac9d9238"
   integrity sha512-3FtiBP0gKDjmCIbPUn8GkBshA8vXUB9Zi+BOSEOwo5HDIEF0NXg19ov+m8SqaZEG+jU6p7w+dmHyRGkUxj9b4g==
@@ -68,6 +68,23 @@
     apollo-server-env "^2.4.3"
     core-js "^3.4.0"
     lodash.xorby "^4.7.0"
+
+"@apollo/link-batch-http@^2.0.0-beta.3":
+  version "2.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/@apollo/link-batch-http/-/link-batch-http-2.0.0-beta.3.tgz#fc5f17c1521c4fdab083c23d820597545bdfd73c"
+  integrity sha512-5/OWwlvGIPzDodbNUOoUVfwrYUpXl7KfwvphXcTUi5ql1ll7W0o+rczlHzrrE0yY7cFxZ9ys8lz/kNllLgaMyQ==
+  dependencies:
+    "@apollo/client" "^3.0.0-beta.23"
+    "@apollo/link-batch" "^2.0.0-beta.3"
+    tslib "^1.9.3"
+
+"@apollo/link-batch@^2.0.0-beta.3":
+  version "2.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/@apollo/link-batch/-/link-batch-2.0.0-beta.3.tgz#4a63f0d559ab7824204ebc4409cc295e4f8af2cc"
+  integrity sha512-jHSksoQC8BQrv2LdWiRh16W9yH0lFG0CfPQo13xeG5qudH65znGDmpT+8mjKtF2wHDC13IXabkEgwKjt4+1X3Q==
+  dependencies:
+    "@apollo/client" "^3.0.0-beta.23"
+    tslib "^1.9.3"
 
 "@apollo/react-common@^4.0.0-beta.1":
   version "4.0.0-beta.1"
