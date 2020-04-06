@@ -12,7 +12,7 @@ import {
   mouse,
   Selection,
 } from 'd3';
-import { feature, mesh } from 'topojson-client';
+import { feature } from 'topojson-client';
 import us from '../utils/map';
 import { MapMouseHandler, RegionFeature, Region, MinimalRegion } from '../types';
 
@@ -22,7 +22,7 @@ interface ChoroplethProps {
   height: number;
   onEnterRegion: (region: Region | MinimalRegion) => void;
   onClickRegion: (region: Region | MinimalRegion) => void;
-  onClickOutside: () => void;
+  onClickOutside: (view: 'nation' | 'state') => void;
 }
 
 export default function Choropleth({
@@ -34,12 +34,12 @@ export default function Choropleth({
   onClickOutside,
 }: ChoroplethProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
+  // this isn't a part of state because the view is managed by d3, not react
+  // hacky since this relies on the fact the component does not rerender
+  // in the future maybe refactor this component to fully integrate into react ecosystem
+  let view: 'nation' | 'state' = 'nation';
 
   useEffect(() => {
-    if (!svgRef.current) {
-      return;
-    }
-
     /* handlers and utility functions */
     const handleClickRegion: MapMouseHandler = (feature, i, nodes) => {
       svg.selectAll('.focused').classed('focused', false);
@@ -53,7 +53,7 @@ export default function Choropleth({
 
     const handleClickOutside = () => {
       svg.selectAll('.focused').classed('focused', false);
-      onClickOutside();
+      onClickOutside(view);
     };
 
     const handleEnterRegion: MapMouseHandler = (feature, i, nodes) => {
@@ -87,17 +87,17 @@ export default function Choropleth({
         .transition()
         .duration(750)
         .style('opacity', 0)
-        .style('visibility', 'hidden');
+        .on('end', (_datum, i, nodes) => select(nodes[i]).attr('visibility', 'hidden'));
     };
 
     const attachCountyMouseHandlers = (stateGroup: Selection<SVGGElement, RegionFeature, null, undefined>) => {
       stateGroup.select('.state').remove();
       stateGroup
+        .classed('focused', false)
         .on('mouseenter', null)
         .on('mouseleave', null)
         .on('click', null)
         .select('g')
-        .attr('stroke', 'white')
         .attr('stroke-width', 0.5)
         .selectAll<SVGPathElement, RegionFeature>('path')
         .on('mouseenter', handleEnterRegion)
@@ -110,6 +110,7 @@ export default function Choropleth({
       zoomOnState(feature);
       blurOtherStates(feature);
       attachCountyMouseHandlers(stateGroup);
+      view = 'state';
     };
 
     const handleZoom = () => states.attr('transform', event.transform);
@@ -119,7 +120,7 @@ export default function Choropleth({
     const projection = geoAlbersUsa().fitSize([width, height], feature(us, us.objects.counties));
     const path = geoPath(projection);
     const color = scaleThreshold<number, string>().domain(range(1, 400, 50)).range(schemeReds[9]);
-    const svg = select<SVGSVGElement, undefined>(svgRef.current).attr('viewBox', `0 0 ${width} ${height}`);
+    const svg = select<SVGSVGElement, undefined>(svgRef.current!).attr('viewBox', `0 0 ${width} ${height}`);
     svg
       .call(stateZoom)
       .on('wheel.zoom', null)
@@ -151,7 +152,7 @@ export default function Choropleth({
           counties
             .append('path')
             .datum(feature(us, county) as RegionFeature)
-            .attr('fill', (d) => color(regions.get(d.id)?.cases || 0))
+            .attr('fill', (d) => color(regions.get(d.id)?.cases ?? 0))
             .attr('d', path);
         }
       });

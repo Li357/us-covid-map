@@ -10,6 +10,7 @@ import { getAllCasesDeaths } from '../types/getAllCasesDeaths';
 import { getCountyDataVariables, getCountyData } from '../types/getCountyData';
 import { useRegionMap } from '../utils/hooks';
 
+const NATION_FIPS = 'NATION'; // from graphql server
 function Index() {
   // TODO: handle loading and errors
   const { loading: loadingCasesDeaths, data: allCasesDeaths, client } = useQuery<getAllCasesDeaths>(
@@ -30,17 +31,13 @@ function Index() {
     }
   };
 
-  // TODO: handle double click in state view
-  const clearSelectedRegion = () => {
-    setSelectedRegion((prevSelectedRegion) => {
-      if (prevSelectedRegion) {
-        const { fips } = prevSelectedRegion;
-        if (fips.length > 2 && fips !== allCasesDeaths?.nation.fips) {
-          return regionMap.get(fips.slice(0, 2)) as Region;
-        }
-      }
-      return allCasesDeaths?.nation;
-    });
+  const clearSelectedRegion = (view: 'nation' | 'state') => {
+    setSelectedRegion(
+      (prevSelectedRegion) =>
+        regionMap.get(
+          view === 'state' && prevSelectedRegion ? prevSelectedRegion?.fips.slice(0, 2) : NATION_FIPS,
+        ) as Region,
+    );
   };
 
   useEffect(() => {

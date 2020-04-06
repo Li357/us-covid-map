@@ -1,6 +1,6 @@
 import { GeometryCollection, Objects } from 'topojson-specification';
 import { Feature, GeometryObject } from 'geojson';
-import { ValueFn, BaseType } from 'd3';
+import { ValueFn } from 'd3';
 import {
   getAllCasesDeaths_states,
   getAllCasesDeaths_nation,
