@@ -18,11 +18,9 @@ function Index() {
   const [selectedRegion, setSelectedRegion] = useState<Region | undefined>(undefined);
   const [regionMap, addStates, addCounties] = useRegionMap();
 
-  const setSelectedRegionAndPreload = async (region: MinimalRegion | Region) => {
-    // if we reach here, the hovered area is going to be a region with fully loaded data (as it has a sidebar to show up in)
-    setSelectedRegion(region as Region);
-
-    // currently this only preloads states
+  const preloadStateData = async (region: MinimalRegion | Region) => {
+    // loads county data for specific hovered state
+    // TODO: support mobile clients where only click event is triggered
     if (region.__typename === 'State') {
       const { data: counties } = await client.query<getCountyData, getCountyDataVariables>({
         query: GET_COUNTY_DATA_BY_STATE,
@@ -31,10 +29,15 @@ function Index() {
       addCounties(counties);
     }
   };
+
+  // TODO: handle double click in state view
   const clearSelectedRegion = () => {
     setSelectedRegion((prevSelectedRegion) => {
-      if (prevSelectedRegion && prevSelectedRegion.fips.length > 2) {
-        return regionMap.get(prevSelectedRegion.fips.slice(0, 2)) as Region;
+      if (prevSelectedRegion) {
+        const { fips } = prevSelectedRegion;
+        if (fips.length > 2 && fips !== allCasesDeaths?.nation.fips) {
+          return regionMap.get(fips.slice(0, 2)) as Region;
+        }
       }
       return allCasesDeaths?.nation;
     });
@@ -45,7 +48,7 @@ function Index() {
       setSelectedRegion(allCasesDeaths?.nation);
       addStates(allCasesDeaths);
     }
-  }, [allCasesDeaths]);
+  }, [allCasesDeaths, selectedRegion]);
 
   if (loadingCasesDeaths || !allCasesDeaths || !selectedRegion) {
     return null;
@@ -58,8 +61,9 @@ function Index() {
           regions={regionMap}
           width={960}
           height={600}
-          onEnterRegion={setSelectedRegionAndPreload}
-          onExitMap={clearSelectedRegion}
+          onEnterRegion={preloadStateData}
+          onClickRegion={(region) => setSelectedRegion(region as Region)}
+          onClickOutside={clearSelectedRegion}
         />
         <Sidebar selectedRegion={selectedRegion} />
       </div>

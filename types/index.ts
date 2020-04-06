@@ -1,6 +1,6 @@
 import { GeometryCollection, Objects } from 'topojson-specification';
 import { Feature, GeometryObject } from 'geojson';
-import { ValueFn } from 'd3';
+import { ValueFn, BaseType } from 'd3';
 import {
   getAllCasesDeaths_states,
   getAllCasesDeaths_nation,
@@ -29,4 +29,4 @@ export type DayTotal =
   | getCountyData_states_counties_timeline;
 export type Timeline = DayTotal[];
 export type RegionFeature = Omit<Feature<GeometryObject, RegionProperties>, 'id'> & { id: string };
-export type MapMouseHandler = ValueFn<Element, RegionFeature, any>;
+export type MapMouseHandler<E extends Element = Element> = ValueFn<E, RegionFeature, any>;
