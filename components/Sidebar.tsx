@@ -1,44 +1,89 @@
-import { useMemo, useState } from 'react';
-import { timeFormat } from 'd3';
-import { Region } from '../types';
+import { useMemo, useState, useEffect } from 'react';
+import { Region, MinimalRegion } from '../types';
 import Stat from './Stat';
 import Card from './Card';
 import LineChart from './LineChart';
 import { processTimeline, formatNumber } from '../utils/data';
+import { useLazyQuery } from '@apollo/client';
+import { GET_COUNTY_DATA_BY_STATE } from '../queries';
+import { getCountyData, getCountyDataVariables } from '../types/getCountyData';
 import arrow from '../public/arrow.svg';
+import spinner from '../public/loading.svg';
 
 interface SidebarProps {
-  selectedRegion: Region;
-  regionInView: Region;
-  onBlur: () => void;
+  view: 'nation' | 'state';
+  selectedRegion: Region | MinimalRegion;
+  onBlurState: () => void;
 }
 
-export default function Sidebar({ selectedRegion, regionInView, onBlur }: SidebarProps) {
-  // TODO: add loading vis
-  if (!selectedRegion.timeline) {
-    return null;
-  }
+export default function Sidebar({ selectedRegion, view, onBlurState }: SidebarProps) {
+  const [loadCounties, { loading, error, data }] = useLazyQuery<
+    getCountyData,
+    getCountyDataVariables
+  >(GET_COUNTY_DATA_BY_STATE);
+  const hasPartialInfo = !selectedRegion.hasOwnProperty('timeline');
 
-  const data = selectedRegion.timeline.slice(0, 30); // only take first 30 days of data
-  const [selectedIndex, setSelectedIndex] = useState(data.length - 1);
-  const casesTimeline = useMemo(() => processTimeline(data, 'cases'), [selectedRegion]);
-  const deathsTimeline = useMemo(() => processTimeline(data, 'deaths'), [selectedRegion]);
-  const formatDateTime = timeFormat('%b %e, %I:%M %p');
+  const region = useMemo(() => {
+    if (hasPartialInfo) {
+      if (data) {
+        const { counties } = data.states[0];
+        return counties.find((county) => county.fips === selectedRegion.fips)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+      }
+      return;
+    }
+    return selectedRegion as Region;
+  }, [data, selectedRegion, hasPartialInfo]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [casesTimeline, deathsTimeline] = useMemo(() => {
+    if (region) {
+      const timeline = region.timeline.slice(0, 30);
+      const cases = processTimeline(timeline, 'cases');
+      const deaths = processTimeline(timeline, 'deaths');
+      return [cases, deaths];
+    }
+    return [[], []];
+  }, [region]);
+
+  // fetch county data if it doesn't exist
+  useEffect(() => {
+    if (!loading && !region?.hasOwnProperty('timeline')) {
+      const stateId = selectedRegion.fips.slice(0, 2);
+      loadCounties({ variables: { stateId } });
+    }
+  }, [region, loading, loadCounties, selectedRegion]);
+
+  // TODO: handle errors
+  if (loading || error || !region) {
+    return (
+      <div className="sidebar">
+        <img src={spinner} className="spinner" />
+        <style jsx>{`
+          .sidebar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 450px;
+            padding: 50px;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="sidebar">
       <div className="name">
         <div>
-          <strong>{selectedRegion.name}</strong>
-          {regionInView.fips.length === 2 && <img className="back" src={arrow} onClick={onBlur} />}
+          <strong>{region.name}</strong>
+          {view === 'state' && <img className="back" src={arrow} onClick={onBlurState} />}
         </div>
         <span>
-          <strong>POPULATION:</strong> {formatNumber(selectedRegion.population)}
+          <strong>POPULATION:</strong> {formatNumber(region.population)}
         </span>
       </div>
       <div className="stats">
-        <Stat color="red" title="Cases" value={formatNumber(selectedRegion.cases)} />
-        <Stat color="gray" title="Deaths" value={formatNumber(selectedRegion.deaths)} />
+        <Stat color="red" title="Cases" value={formatNumber(region.cases)} />
+        <Stat color="gray" title="Deaths" value={formatNumber(region.deaths)} />
       </div>
       <Card color="red">
         <LineChart
@@ -60,7 +105,6 @@ export default function Sidebar({ selectedRegion, regionInView, onBlur }: Sideba
           height={200}
         />
       </Card>
-      <span>Last updated {formatDateTime(new Date(selectedRegion.lastUpdated))}</span>
       <style jsx>{`
         .sidebar {
           flex: 0 0 450px;
@@ -109,6 +153,21 @@ export default function Sidebar({ selectedRegion, regionInView, onBlur }: Sideba
 
         .stats > .stat:last-child {
           margin-right: 0;
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .sidebar > * {
+          animation: slideUp 0.5s linear;
         }
       `}</style>
     </div>

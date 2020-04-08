@@ -1,86 +1,101 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@apollo/client';
 import Page from '../components/Page';
 import Choropleth from '../components/Choropleth';
 import Sidebar from '../components/Sidebar';
 import { withApollo } from '../utils/apollo';
-import { Region, MinimalRegion } from '../types';
 import { GET_ALL_CASES_DEATHS, GET_COUNTY_DATA_BY_STATE } from '../queries';
 import { getAllCasesDeaths } from '../types/getAllCasesDeaths';
 import { getCountyDataVariables, getCountyData } from '../types/getCountyData';
-import { useRegionMap } from '../utils/hooks';
+import { createRegionMap } from '../utils/data';
+import { NATION_ID } from '../utils/constants';
+import spinner from '../public/loading.svg';
 
-const NATION_FIPS = 'NATION'; // from graphql server
 function Index() {
-  // TODO: handle loading and errors
-  const { loading: loadingCasesDeaths, data: allCasesDeaths, client } = useQuery<getAllCasesDeaths>(
-    GET_ALL_CASES_DEATHS,
-  );
-  const [selectedRegion, setSelectedRegion] = useState<Region | undefined>(undefined);
-  const [regionInView, setRegionInView] = useState<Region | undefined>(undefined);
-  const [regionMap, addStates, addCounties] = useRegionMap();
+  const { loading, data, error, client } = useQuery<getAllCasesDeaths>(GET_ALL_CASES_DEATHS);
+  const regionMap = useMemo(() => createRegionMap(data), [data]);
+  const [selectedRegionId, setSelectedRegionId] = useState(NATION_ID);
+  const [view, setView] = useState<'nation' | 'state'>('nation');
+  const selectedRegion = regionMap.get(selectedRegionId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
-  const preloadStateData = async (region: MinimalRegion | Region) => {
-    // loads county data for specific hovered state
-    // TODO: support mobile clients where only click event is triggered
-    if (region.__typename === 'State') {
-      const { data: counties } = await client.query<getCountyData, getCountyDataVariables>({
+  const preloadStateData = (regionId: string) => {
+    const isState = regionId.length === 2;
+    if (isState) {
+      client.query<getCountyData, getCountyDataVariables>({
         query: GET_COUNTY_DATA_BY_STATE,
-        variables: { stateFips: region.fips },
+        variables: { stateId: regionId },
       });
-      addCounties(counties);
     }
   };
 
-  const clearSelectedRegion = () => {
-    setSelectedRegion((prevSelectedRegion) => {
-      const inStateView = prevSelectedRegion && regionInView && regionInView.fips.length === 2;
-      return regionMap.get(inStateView ? prevSelectedRegion!.fips.slice(0, 2) : NATION_FIPS) as Region;
-    });
-  };
+  const setViewAndSelectedRegionId = useCallback(
+    (stateId: string) => {
+      setView('state');
+      setSelectedRegionId(stateId);
+    },
+    [setView, setSelectedRegionId],
+  );
 
-  const handleFocusAndBlur = (region: Region | null) => {
-    const inNationView = region === null;
-    const nextRegionInView = (inNationView ? regionMap.get(NATION_FIPS) : region) as Region;
-    setRegionInView(nextRegionInView);
-  };
+  const resetSelectedRegionId = useCallback(() => {
+    // if in nation view, reset to nation info, else reset to state info
+    setSelectedRegionId((prevSelectedRegionId) =>
+      view === 'nation' ? NATION_ID : prevSelectedRegionId.slice(0, 2),
+    );
+  }, [setSelectedRegionId, view]);
 
-  useEffect(() => {
-    if (allCasesDeaths && !selectedRegion) {
-      setSelectedRegion(allCasesDeaths.nation);
-      setRegionInView(allCasesDeaths.nation);
-      addStates(allCasesDeaths);
-    }
-  }, [allCasesDeaths, selectedRegion]);
+  const resetViewAndSelectedRegionId = useCallback(() => {
+    setView('nation');
+    // set selected region to state when blurring
+    setSelectedRegionId((prevSelectedRegionId) => prevSelectedRegionId.slice(0, 2));
+  }, [setView, setSelectedRegionId]);
 
-  if (loadingCasesDeaths || !allCasesDeaths || !selectedRegion || !regionInView) {
-    return null;
+  let content = <img src={spinner} className="spinner" />;
+  if (!loading && data && !error) {
+    content = (
+      <>
+        <Choropleth
+          view={view}
+          width={960}
+          height={600}
+          regions={regionMap}
+          onEnterRegion={preloadStateData}
+          onClickRegion={setSelectedRegionId}
+          onClickOutside={resetSelectedRegionId}
+          onDoubleClickState={setViewAndSelectedRegionId}
+        />
+        <Sidebar
+          view={view}
+          selectedRegion={selectedRegion}
+          onBlurState={resetViewAndSelectedRegionId}
+        />
+      </>
+    );
   }
 
   return (
     <Page>
-      <div className="container">
-        <Choropleth
-          regions={regionMap}
-          regionInView={regionInView}
-          width={960}
-          height={600}
-          onEnterRegion={preloadStateData}
-          onClickRegion={(region) => setSelectedRegion(region as Region)}
-          onClickOutside={clearSelectedRegion}
-          onFocusState={handleFocusAndBlur}
-        />
-        <Sidebar
-          selectedRegion={selectedRegion}
-          regionInView={regionInView}
-          onBlur={() => setRegionInView(regionMap.get(NATION_FIPS) as Region)}
-        />
-      </div>
+      <div className="container">{content}</div>
       <style jsx>{`
         .container {
           display: flex;
           align-items: stretch;
           height: 100%;
+          justify-content: center;
+        }
+      `}</style>
+      <style jsx global>{`
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        .spinner {
+          width: 50px;
+          animation: spin 1s linear infinite;
         }
       `}</style>
     </Page>

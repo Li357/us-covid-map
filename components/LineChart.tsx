@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import {
   select,
   axisBottom,
@@ -43,16 +43,30 @@ const getTimelineRange = (timeline: [Date, number][]) => {
 };
 
 const MARGIN = 30;
-export default function LineChart({ name, timeline, width, height, onMouseMove, index }: LineChartProps) {
-  const svgRef = useRef(null);
-  const x = scaleTime()
-    .domain(getTimelineDomain(timeline))
-    .range([0, width - MARGIN])
-    .nice();
-  const y = scaleLinear()
-    .domain(getTimelineRange(timeline))
-    .range([height - MARGIN, 0]);
-  const formatDate = timeFormat('%B %e');
+export default function LineChart({
+  name,
+  timeline,
+  width,
+  height,
+  onMouseMove,
+  index,
+}: LineChartProps) {
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const x = useMemo(
+    () =>
+      scaleTime()
+        .domain(getTimelineDomain(timeline))
+        .range([0, width - MARGIN])
+        .nice(),
+    [timeline, width],
+  );
+  const y = useMemo(
+    () =>
+      scaleLinear()
+        .domain(getTimelineRange(timeline))
+        .range([height - MARGIN, 0]),
+    [timeline, height],
+  );
 
   useEffect(() => {
     const svg = select(svgRef.current).attr('viewBox', `0 0 ${width} ${height}`);
@@ -73,7 +87,7 @@ export default function LineChart({ name, timeline, width, height, onMouseMove, 
       .call(axisRight(y).tickValues(y.ticks(10).filter(Number.isInteger)).tickFormat(format('~s')));
 
     if (timeline.length > 0) {
-      const { color } = getComputedStyle(svg.node()!);
+      const { color } = getComputedStyle(svg.node()!); // eslint-disable-line @typescript-eslint/no-non-null-assertion
       const path = svg
         .append('path')
         .datum(timeline)
@@ -100,14 +114,16 @@ export default function LineChart({ name, timeline, width, height, onMouseMove, 
         .attr('cy', ([_date, timeline]) => y(timeline));
 
       svg.on('mousemove', () => {
-        const [xPos] = mouse(svg.node()!);
+        const [xPos] = mouse(svg.node()!); // eslint-disable-line @typescript-eslint/no-non-null-assertion
         const dPos = x.invert(xPos);
-        const bisect = bisector<[Date, number], [Date, number]>(([date1], [date2]) => date2.getTime() - date1.getTime())
-          .left;
+        const bisect = bisector<[Date, number], [Date, number]>(
+          ([date1], [date2]) => date2.getTime() - date1.getTime(),
+        ).left;
         const index = bisect(timeline, [dPos, 0], 1, timeline.length - 1);
         const [d0] = timeline[index - 1];
         const [d1] = timeline[index];
-        const closestIndex = dPos.getTime() - d0.getTime() > d1.getTime() - dPos.getTime() ? index - 1 : index;
+        const closestIndex =
+          dPos.getTime() - d0.getTime() > d1.getTime() - dPos.getTime() ? index - 1 : index;
         onMouseMove(closestIndex);
       });
 
@@ -123,18 +139,31 @@ export default function LineChart({ name, timeline, width, height, onMouseMove, 
       xAxis.remove();
       yAxis.remove();
     };
-  }, [svgRef, width, height, timeline]);
+  }, [svgRef, width, height, timeline, x, y, onMouseMove]);
 
   useEffect(() => {
+    const formatDate = timeFormat('%B %e');
     const svg = select(svgRef.current);
-    const { color } = getComputedStyle(svg.node()!);
+    const { color } = getComputedStyle(svg.node()!); // eslint-disable-line @typescript-eslint/no-non-null-assertion
     const info = svg.append('g').attr('dominant-baseline', 'hanging');
-    info.append('text').classed('title', true).attr('x', 0).attr('y', 0).attr('fill', color).text('No data');
+    info
+      .append('text')
+      .classed('title', true)
+      .attr('x', 0)
+      .attr('y', 0)
+      .attr('fill', color)
+      .text('No data');
 
     if (timeline.length > 0 && timeline[index]) {
       const [x1, y1] = timeline[index];
       info.select('.title').text(`${formatNumber(y1)} ${name}`);
-      info.append('text').classed('date', true).text(formatDate(x1)).attr('fill', color).attr('x', 0).attr('y', 20);
+      info
+        .append('text')
+        .classed('date', true)
+        .text(formatDate(x1))
+        .attr('fill', color)
+        .attr('x', 0)
+        .attr('y', 20);
 
       const focusDot = svg
         .selectAll('.dots')
@@ -152,7 +181,7 @@ export default function LineChart({ name, timeline, width, height, onMouseMove, 
     return () => {
       info.remove();
     };
-  }, [svgRef, timeline, index, name, onMouseMove]);
+  }, [svgRef, timeline, index, name, onMouseMove, x, y]);
 
   return (
     <>
