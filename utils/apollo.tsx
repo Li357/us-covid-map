@@ -61,7 +61,8 @@ export const initOnContext = (ctx: NextPageContextApp): NextPageContextApp => {
   // Initialize ApolloClient if not already done
   // TODO: Add proper types here:
   // https://github.com/zeit/next.js/issues/9542
-  const apolloClient = ctx.apolloClient || initApolloClient(ctx.apolloState || {}, inAppContext ? ctx.ctx : ctx);
+  const apolloClient =
+    ctx.apolloClient || initApolloClient(ctx.apolloState || {}, inAppContext ? ctx.ctx : ctx);
 
   // We send the Apollo Client as a prop to the component to avoid calling initApollo() twice in the server.
   // Otherwise, the component would have to call initApollo() again but this
@@ -153,7 +154,7 @@ export const withApollo = ({ ssr = false } = {}) => (PageComponent: NextPage): R
 
             // Since AppComponents and PageComponents have different context types
             // we need to modify their props a little.
-            let props: any;
+            let props: any; // eslint-disable-line @typescript-eslint/no-explicit-any
             if (inAppContext) {
               props = { ...pageProps, apolloClient };
             } else {

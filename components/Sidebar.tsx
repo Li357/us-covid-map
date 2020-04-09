@@ -3,7 +3,7 @@ import { Region, MinimalRegion } from '../types';
 import Stat from './Stat';
 import Card from './Card';
 import LineChart from './LineChart';
-import { processTimeline, formatNumber } from '../utils/data';
+import { processTimeline, formatNumber, formatDate } from '../utils/data';
 import { useLazyQuery } from '@apollo/client';
 import { GET_COUNTY_DATA_BY_STATE } from '../queries';
 import { getCountyData, getCountyDataVariables } from '../types/getCountyData';
