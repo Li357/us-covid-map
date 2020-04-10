@@ -157,7 +157,6 @@ function Index() {
 
           .container > div.sidebar {
             overflow: hidden;
-            padding: 0 15% 15%;
           }
         }
       `}</style>

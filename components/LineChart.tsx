@@ -145,7 +145,7 @@ export default function LineChart({
     const formatDate = timeFormat('%B %e');
     const svg = select(svgRef.current);
     const { color } = getComputedStyle(svg.node()!); // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    const info = svg.append('g').attr('dominant-baseline', 'hanging');
+    const info = svg.append('g').attr('transform', 'translate(0, 15)'); // dominant-baseline is not supported on all browsers
     info
       .append('text')
       .classed('title', true)
