@@ -104,14 +104,6 @@ function Index() {
   return (
     <Page>
       <div className="container">{content}</div>
-      <style jsx>{`
-        .container {
-          display: flex;
-          align-items: stretch;
-          height: 100%;
-          justify-content: center;
-        }
-      `}</style>
       <style jsx global>{`
         @keyframes spin {
           from {
@@ -127,11 +119,41 @@ function Index() {
           animation: spin 1s linear infinite;
         }
 
+        .container {
+          display: flex;
+          align-items: stretch;
+          height: 100%;
+          justify-content: center;
+        }
+
         .container > .left {
           display: flex;
           flex-direction: column;
           padding: 50px 0 50px 50px;
           flex: 1;
+        }
+
+        @media (max-width: 1200px) {
+          body {
+            overflow-y: scroll;
+          }
+
+          #__next {
+            height: unset;
+          }
+
+          .container {
+            flex-direction: column;
+          }
+
+          .container > .left {
+            padding: 50px;
+          }
+
+          .container > div.sidebar {
+            overflow: hidden;
+            padding: 0 15% 15%;
+          }
         }
       `}</style>
     </Page>

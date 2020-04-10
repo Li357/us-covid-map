@@ -107,10 +107,11 @@ export default function Sidebar({ selectedRegion, view, onBlurState }: SidebarPr
       </Card>
       <style jsx>{`
         .sidebar {
-          flex: 0 0 450px;
+          flex-basis: 25%;
           padding: 50px;
           display: flex;
           flex-direction: column;
+          overflow-y: scroll;
         }
 
         .name {
