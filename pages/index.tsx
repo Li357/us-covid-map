@@ -138,8 +138,8 @@ function Index() {
             overflow-y: scroll;
           }
 
-          #__next {
-            height: unset;
+          body > #__next {
+            height: auto;
           }
 
           .container {
