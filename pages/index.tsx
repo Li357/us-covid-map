@@ -135,6 +135,7 @@ function Index() {
 
         @media (max-width: 1200px) {
           body {
+            overflow: visible;
             overflow-y: scroll;
           }
 
