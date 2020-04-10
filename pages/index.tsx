@@ -117,6 +117,7 @@ function Index() {
         .spinner {
           width: 50px;
           animation: spin 1s linear infinite;
+          align-self: center;
         }
 
         .container {
@@ -135,16 +136,19 @@ function Index() {
 
         @media (max-width: 1200px) {
           body {
-            overflow: visible;
+            overflow: visible !important;
             overflow-y: scroll;
           }
 
           body > #__next {
             height: auto;
+            display: flex;
           }
 
           .container {
+            flex: 1;
             flex-direction: column;
+            justify-content: center;
           }
 
           .container > .left {
