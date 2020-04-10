@@ -10,27 +10,29 @@ import {
   event,
   scaleLinear,
   scaleSequential,
-  interpolateReds,
   range,
   axisBottom,
-  interpolateOrRd,
-  interpolateYlOrRd,
-  interpolateRdGy,
 } from 'd3';
 import { feature } from 'topojson-client';
 import { GeometryObject } from 'topojson-specification';
 import us from '../utils/map';
 import { bringToFront } from '../utils/element';
-import { MapMouseHandler, RegionFeature, Region, MinimalRegion, RegionProperties } from '../types';
+import {
+  MapMouseHandler,
+  RegionFeature,
+  Region,
+  MinimalRegion,
+  RegionProperties,
+  MapType,
+} from '../types';
 import { getUpperBound } from '../utils/data';
 
 interface ChoroplethProps {
-  title: string;
   view: 'nation' | 'state';
   regions: Map<string, Region | MinimalRegion>;
   width: number;
   height: number;
-  getScalar: (region?: Region | MinimalRegion) => number;
+  mapType: MapType;
   onEnterRegion: (regionId: string) => void;
   onClickRegion: (regionId: string) => void;
   onClickOutside: () => void;
@@ -45,12 +47,11 @@ const LEGEND_MARGIN_RIGHT = 80;
 const LEGEND_TICKS = 5;
 
 export default function Choropleth({
-  title,
   view,
   regions,
   width,
   height,
-  getScalar,
+  mapType,
   onEnterRegion,
   onClickRegion,
   onClickOutside,
@@ -238,14 +239,14 @@ export default function Choropleth({
     const svg = select(svgRef.current);
     const data = [...regions.values()]
       .filter((region) => /[0-9]{5}/.test(region.fips))
-      .map(getScalar);
+      .map(mapType.getScalar);
     const upper = getUpperBound(data);
-    const color = scaleSequential(interpolateReds).domain([0, upper]);
+    const color = scaleSequential(mapType.colorInterpolator).domain([0, upper]);
 
     svg
       .selectAll('.counties')
       .selectAll<SVGPathElement, RegionFeature>('path')
-      .attr('fill', (feature) => color(getScalar(regions.get(feature.id)) ?? 0));
+      .attr('fill', (feature) => color(mapType.getScalar(regions.get(feature.id)) ?? 0));
 
     const x = scaleLinear().domain(color.domain()).rangeRound([0, LEGEND_WIDTH]);
     const legend = svg
@@ -255,7 +256,7 @@ export default function Choropleth({
         'transform',
         `translate(${width - LEGEND_WIDTH - LEGEND_MARGIN_RIGHT}, ${LEGEND_MARGIN_TOP})`,
       );
-    legend.append('text').classed('label', true).attr('y', -8).text(title);
+    legend.append('text').classed('label', true).attr('y', -8).text(mapType.legendTitle);
     const scale = legend.append('g');
     scale
       .selectAll('rect')
@@ -279,7 +280,7 @@ export default function Choropleth({
     return () => {
       legend.remove();
     };
-  }, [svgRef, regions, width, height, getScalar, title]);
+  }, [svgRef, regions, width, height, mapType]);
 
   // change choropleth view (nation or state) by zoom
   useEffect(() => {

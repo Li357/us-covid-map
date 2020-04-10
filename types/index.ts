@@ -25,6 +25,7 @@ export interface MapType {
   name: string;
   legendTitle: string;
   getScalar: (region?: Region | MinimalRegion) => number;
+  colorInterpolator: (n: number) => string;
 }
 
 // properties of regions that are initially fetched, only represent cases and deaths and fips

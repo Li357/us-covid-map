@@ -12,12 +12,23 @@ import { createRegionMap } from '../utils/data';
 import { NATION_ID } from '../utils/constants';
 import spinner from '../public/loading.svg';
 import { MinimalRegion, Region, MapType } from '../types';
+import { interpolateGreys, interpolateReds } from 'd3';
 
 const getCases = (region?: Region | MinimalRegion) => region?.cases ?? 0;
 const getDeaths = (region?: Region | MinimalRegion) => region?.deaths ?? 0;
 const mapTypes: MapType[] = [
-  { name: 'Cases', legendTitle: 'Coronavirus cases by county', getScalar: getCases },
-  { name: 'Deaths', legendTitle: 'Coronavirus deaths by county', getScalar: getDeaths },
+  {
+    name: 'Cases',
+    legendTitle: 'Coronavirus cases by county',
+    getScalar: getCases,
+    colorInterpolator: interpolateReds,
+  },
+  {
+    name: 'Deaths',
+    legendTitle: 'Coronavirus deaths by county',
+    getScalar: getDeaths,
+    colorInterpolator: (t) => interpolateGreys(t + 0.1), // so you can actually see the background
+  },
 ];
 
 function Index() {
@@ -25,10 +36,8 @@ function Index() {
   const regionMap = useMemo(() => createRegionMap(data), [data]);
   const [view, setView] = useState<'nation' | 'state'>('nation');
   const [selectedMapTypeIndex, setSelectedMapTypeIndex] = useState(0);
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedRegionId, setSelectedRegionId] = useState(NATION_ID);
   const selectedRegion = regionMap.get(selectedRegionId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-  const { legendTitle, getScalar } = mapTypes[selectedMapTypeIndex];
 
   const preloadStateData = (regionId: string) => {
     const isState = regionId.length === 2;
@@ -67,19 +76,16 @@ function Index() {
       <>
         <div className="left">
           <Settings
-            selectedDate={selectedDate}
-            onChangeDate={setSelectedDate}
             mapTypes={mapTypes}
             selectedMapTypeIndex={selectedMapTypeIndex}
             onChangeMapType={setSelectedMapTypeIndex}
           />
           <Choropleth
-            title={legendTitle}
             view={view}
             width={960}
             height={600}
+            mapType={mapTypes[selectedMapTypeIndex]}
             regions={regionMap}
-            getScalar={getScalar}
             onEnterRegion={preloadStateData}
             onClickRegion={setSelectedRegionId}
             onClickOutside={resetSelectedRegionId}
