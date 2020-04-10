@@ -131,6 +131,7 @@ function Index() {
           display: flex;
           flex-direction: column;
           padding: 50px 0 50px 50px;
+          flex: 1;
         }
       `}</style>
     </Page>
