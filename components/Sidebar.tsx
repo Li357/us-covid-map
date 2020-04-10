@@ -3,7 +3,7 @@ import { Region, MinimalRegion } from '../types';
 import Stat from './Stat';
 import Card from './Card';
 import LineChart from './LineChart';
-import { processTimeline, formatNumber, formatDate } from '../utils/data';
+import { processTimeline, formatNumber } from '../utils/data';
 import { useLazyQuery } from '@apollo/client';
 import { GET_COUNTY_DATA_BY_STATE } from '../queries';
 import { getCountyData, getCountyDataVariables } from '../types/getCountyData';
@@ -82,8 +82,8 @@ export default function Sidebar({ selectedRegion, view, onBlurState }: SidebarPr
         </span>
       </div>
       <div className="stats">
-        <Stat color="red" title="Cases" value={formatNumber(region.cases)} />
-        <Stat color="gray" title="Deaths" value={formatNumber(region.deaths)} />
+        <Stat color="red" title="Cases" value={formatNumber(region.timeline[0].cases)} />
+        <Stat color="gray" title="Deaths" value={formatNumber(region.timeline[0].deaths)} />
       </div>
       <Card color="red">
         <LineChart

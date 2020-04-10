@@ -8,13 +8,13 @@ import { withApollo } from '../utils/apollo';
 import { GET_ALL_CASES_DEATHS, GET_COUNTY_DATA_BY_STATE } from '../queries';
 import { getAllCasesDeaths } from '../types/getAllCasesDeaths';
 import { getCountyDataVariables, getCountyData } from '../types/getCountyData';
-import { createRegionMap } from '../utils/data';
+import { createRegionMap, MMDDYYYY } from '../utils/data';
 import { NATION_ID } from '../utils/constants';
 import spinner from '../public/loading.svg';
-import { MinimalRegion, Region, MapType } from '../types';
+import { MapType, TimeSeriesDatum } from '../types';
 
-const getCases = (region?: Region | MinimalRegion) => region?.cases ?? 0;
-const getDeaths = (region?: Region | MinimalRegion) => region?.deaths ?? 0;
+const getCases = (datum?: TimeSeriesDatum) => datum?.cases ?? 0;
+const getDeaths = (datum?: TimeSeriesDatum) => datum?.deaths ?? 0;
 const mapTypes: MapType[] = [
   { name: 'Cases', legendTitle: 'Coronavirus cases by county', getScalar: getCases },
   { name: 'Deaths', legendTitle: 'Coronavirus deaths by county', getScalar: getDeaths },
@@ -22,7 +22,7 @@ const mapTypes: MapType[] = [
 
 function Index() {
   const { loading, data, error, client } = useQuery<getAllCasesDeaths>(GET_ALL_CASES_DEATHS);
-  const regionMap = useMemo(() => createRegionMap(data), [data]);
+  const [regionMap, timeSeries] = useMemo(() => createRegionMap(data), [data]);
   const [view, setView] = useState<'nation' | 'state'>('nation');
   const [selectedMapTypeIndex, setSelectedMapTypeIndex] = useState(0);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -30,12 +30,21 @@ function Index() {
   const selectedRegion = regionMap.get(selectedRegionId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
   const { legendTitle, getScalar } = mapTypes[selectedMapTypeIndex];
 
-  const preloadStateData = (regionId: string) => {
+  const preloadStateData = async (regionId: string) => {
     const isState = regionId.length === 2;
     if (isState) {
-      client.query<getCountyData, getCountyDataVariables>({
+      const { data: stateData } = await client.query<getCountyData, getCountyDataVariables>({
         query: GET_COUNTY_DATA_BY_STATE,
         variables: { stateId: regionId },
+      });
+      stateData.states[0].counties.forEach((county) => {
+        county.timeline.forEach(({ date, cases, deaths }) => {
+          timeSeries.set(`${MMDDYYYY(new Date(date))}-${county.fips}`, {
+            fips: county.fips,
+            cases,
+            deaths,
+          });
+        });
       });
     }
   };
@@ -78,7 +87,8 @@ function Index() {
             view={view}
             width={960}
             height={600}
-            regions={regionMap}
+            selectedDate={selectedDate}
+            timeSeries={timeSeries}
             getScalar={getScalar}
             onEnterRegion={preloadStateData}
             onClickRegion={setSelectedRegionId}
@@ -122,6 +132,7 @@ function Index() {
         }
 
         .container > .left {
+          flex: 1;
           display: flex;
           flex-direction: column;
           padding: 50px 0 50px 50px;

@@ -13,24 +13,28 @@ import {
   interpolateReds,
   range,
   axisBottom,
-  interpolateOrRd,
-  interpolateYlOrRd,
-  interpolateRdGy,
 } from 'd3';
 import { feature } from 'topojson-client';
 import { GeometryObject } from 'topojson-specification';
 import us from '../utils/map';
 import { bringToFront } from '../utils/element';
-import { MapMouseHandler, RegionFeature, Region, MinimalRegion, RegionProperties } from '../types';
-import { getUpperBound } from '../utils/data';
+import {
+  MapMouseHandler,
+  RegionFeature,
+  RegionProperties,
+  TimeSeries,
+  TimeSeriesDatum,
+} from '../types';
+import { getUpperBound, MMDDYYYY } from '../utils/data';
 
 interface ChoroplethProps {
   title: string;
   view: 'nation' | 'state';
-  regions: Map<string, Region | MinimalRegion>;
+  selectedDate: Date;
+  timeSeries: TimeSeries;
   width: number;
   height: number;
-  getScalar: (region?: Region | MinimalRegion) => number;
+  getScalar: (datum?: TimeSeriesDatum) => number;
   onEnterRegion: (regionId: string) => void;
   onClickRegion: (regionId: string) => void;
   onClickOutside: () => void;
@@ -47,7 +51,8 @@ const LEGEND_TICKS = 5;
 export default function Choropleth({
   title,
   view,
-  regions,
+  selectedDate,
+  timeSeries,
   width,
   height,
   getScalar,
@@ -196,6 +201,16 @@ export default function Choropleth({
   // draw the map skeleton
   useEffect(() => {
     const svg = select(svgRef.current);
+    svg.append('filter').attr('id', 'darker').append('feColorMatrix').attr('type', 'matrix').attr(
+      'values',
+      `
+        0.3  0   0   0   0
+        0  0.3   0   0   0
+        0    0  0.3  0   0
+        0    0   0  0.4  0
+        `,
+    );
+
     const states = svg.append('g').classed('states', true);
     states.append('rect').classed('outside', true).attr('width', '100%').attr('height', '100%');
 
@@ -236,8 +251,8 @@ export default function Choropleth({
   // redrawing of counties and legend after data changes
   useEffect(() => {
     const svg = select(svgRef.current);
-    const data = [...regions.values()]
-      .filter((region) => /[0-9]{5}/.test(region.fips))
+    const data = [...timeSeries.values()]
+      .filter((datum) => /[0-9]{5}/.test(datum.fips))
       .map(getScalar);
     const upper = getUpperBound(data);
     const color = scaleSequential(interpolateReds).domain([0, upper]);
@@ -245,7 +260,9 @@ export default function Choropleth({
     svg
       .selectAll('.counties')
       .selectAll<SVGPathElement, RegionFeature>('path')
-      .attr('fill', (feature) => color(getScalar(regions.get(feature.id)) ?? 0));
+      .attr('fill', (feature) =>
+        color(getScalar(timeSeries.get(`${MMDDYYYY(selectedDate)}-${feature.id}`)) ?? 0),
+      );
 
     const x = scaleLinear().domain(color.domain()).rangeRound([0, LEGEND_WIDTH]);
     const legend = svg
@@ -279,7 +296,7 @@ export default function Choropleth({
     return () => {
       legend.remove();
     };
-  }, [svgRef, regions, width, height, getScalar, title]);
+  }, [svgRef, timeSeries, selectedDate, width, height, getScalar, title]);
 
   // change choropleth view (nation or state) by zoom
   useEffect(() => {
@@ -331,7 +348,7 @@ export default function Choropleth({
         }
 
         .choropleth .entered {
-          fill-opacity: 0.6;
+          filter: url(#darker);
         }
 
         .choropleth .focused {

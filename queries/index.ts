@@ -6,8 +6,6 @@ export const GET_ALL_CASES_DEATHS = gql`
       fips
       name
       population
-      cases
-      deaths
       timeline {
         date
         cases
@@ -18,14 +16,13 @@ export const GET_ALL_CASES_DEATHS = gql`
         name
         cases
         deaths
+        population
       }
     }
     nation {
       fips
       name
       population
-      cases
-      deaths
       timeline {
         date
         cases

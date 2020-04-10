@@ -20,6 +20,7 @@ export interface getAllCasesDeaths_states_counties {
   name: string;
   cases: number;
   deaths: number;
+  population: number;
 }
 
 export interface getAllCasesDeaths_states {
@@ -27,11 +28,8 @@ export interface getAllCasesDeaths_states {
   fips: string;
   name: string;
   population: number;
-  cases: number;
-  deaths: number;
   timeline: getAllCasesDeaths_states_timeline[];
   counties: getAllCasesDeaths_states_counties[];
-  lastUpdated: string;
 }
 
 export interface getAllCasesDeaths_nation_timeline {
@@ -46,10 +44,7 @@ export interface getAllCasesDeaths_nation {
   fips: string;
   name: string;
   population: number;
-  cases: number;
-  deaths: number;
   timeline: getAllCasesDeaths_nation_timeline[];
-  lastUpdated: string;
 }
 
 export interface getAllCasesDeaths {
