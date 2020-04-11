@@ -28,7 +28,7 @@ export function createRegionMap(data?: getAllCasesDeaths) {
 }
 
 function getNearestPowerOf10(n: number) {
-  return Math.pow(10, Math.round(n).toString().length - 1);
+  return Math.pow(10, Math.round(Math.log10(n)));
 }
 
 export function getUpperBound(data: number[]) {

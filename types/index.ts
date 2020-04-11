@@ -34,7 +34,7 @@ export type Region =
   | getAllCasesDeaths_nation
   | getAllCasesDeaths_states
   | getCountyData_states_counties;
-export type MinimalRegion = Pick<Region, 'fips' | 'cases' | 'deaths' | '__typename'>;
+export type MinimalRegion = Pick<Region, 'fips' | 'cases' | 'deaths' | 'population' | '__typename'>;
 export type RegionMap = Map<string, MinimalRegion | Region>;
 export type DayTotal =
   | getAllCasesDeaths_nation_timeline

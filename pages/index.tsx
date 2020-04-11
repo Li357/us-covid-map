@@ -11,11 +11,16 @@ import { getCountyDataVariables, getCountyData } from '../types/getCountyData';
 import { createRegionMap } from '../utils/data';
 import { NATION_ID } from '../utils/constants';
 import spinner from '../public/loading.svg';
-import { MinimalRegion, Region, MapType } from '../types';
+import { MinimalRegion, MapType } from '../types';
 import { interpolateGreys, interpolateReds } from 'd3';
 
-const getCases = (region?: Region | MinimalRegion) => region?.cases ?? 0;
-const getDeaths = (region?: Region | MinimalRegion) => region?.deaths ?? 0;
+const getCases = (region?: MinimalRegion) => region?.cases ?? 0;
+const getDeaths = (region?: MinimalRegion) => region?.deaths ?? 0;
+const getCasesPer1000 = (region?: MinimalRegion) =>
+  (getCases(region) / (region?.population ?? 1)) * 1000;
+const getDeathsPer1000 = (region?: MinimalRegion) =>
+  (getDeaths(region) / (region?.population ?? 1)) * 1000;
+
 const mapTypes: MapType[] = [
   {
     name: 'Cases',
@@ -24,9 +29,21 @@ const mapTypes: MapType[] = [
     colorInterpolator: interpolateReds,
   },
   {
+    name: 'Cases / 1000 people',
+    legendTitle: 'Coronavirus cases per 1000 by county',
+    getScalar: getCasesPer1000,
+    colorInterpolator: interpolateReds, // so you can actually see the background
+  },
+  {
     name: 'Deaths',
     legendTitle: 'Coronavirus deaths by county',
     getScalar: getDeaths,
+    colorInterpolator: (t) => interpolateGreys(t + 0.1), // so you can actually see the background
+  },
+  {
+    name: 'Deaths / 1000 people',
+    legendTitle: 'Coronavirus deaths per 1000 by county',
+    getScalar: getDeathsPer1000,
     colorInterpolator: (t) => interpolateGreys(t + 0.1), // so you can actually see the background
   },
 ];

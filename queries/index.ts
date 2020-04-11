@@ -16,6 +16,7 @@ export const GET_ALL_CASES_DEATHS = gql`
       counties {
         fips
         name
+        population
         cases
         deaths
       }

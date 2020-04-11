@@ -18,6 +18,7 @@ export interface getAllCasesDeaths_states_counties {
   __typename: "County";
   fips: string;
   name: string;
+  population: number;
   cases: number;
   deaths: number;
 }

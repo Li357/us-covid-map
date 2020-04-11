@@ -26,11 +26,6 @@ export default function Settings({
           padding-bottom: 20px;
         }
       `}</style>
-      <style jsx global>{`
-        .settings .segmented {
-          width: 200px;
-        }
-      `}</style>
     </div>
   );
 }

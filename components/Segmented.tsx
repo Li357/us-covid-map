@@ -23,6 +23,7 @@ export default function Segmented({ selectedIndex, options, onChange }: Segmente
           align-items: stretch;
           background-color: #f0f0f0;
           height: 50px;
+          white-space: nowrap;
         }
 
         .option {
@@ -32,6 +33,7 @@ export default function Segmented({ selectedIndex, options, onChange }: Segmente
           border-radius: 5px;
           justify-content: center;
           align-items: center;
+          padding: 15px;
         }
 
         .selected {
