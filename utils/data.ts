@@ -7,7 +7,7 @@ export function processTimeline(timeline: Timeline, key: keyof DayTotal): [Date,
 }
 
 export function formatNumber(n: number): string {
-  return n.toLocaleString();
+  return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
 }
 
 export const formatDate = timeFormat('%B %e, %Y');
@@ -38,3 +38,10 @@ export function getUpperBound(data: number[]) {
   const rounded = Math.round(bound / nearestPowerOf10) * nearestPowerOf10;
   return rounded;
 }
+
+export const getCases = (region?: MinimalRegion) => region?.cases ?? 0;
+export const getDeaths = (region?: MinimalRegion) => region?.deaths ?? 0;
+export const getCasesPer1000 = (region?: MinimalRegion) =>
+  (getCases(region) / (region?.population ?? 1)) * 1000;
+export const getDeathsPer1000 = (region?: MinimalRegion) =>
+  (getDeaths(region) / (region?.population ?? 1)) * 1000;

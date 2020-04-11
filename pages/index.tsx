@@ -8,18 +8,17 @@ import { withApollo } from '../utils/apollo';
 import { GET_ALL_CASES_DEATHS, GET_COUNTY_DATA_BY_STATE } from '../queries';
 import { getAllCasesDeaths } from '../types/getAllCasesDeaths';
 import { getCountyDataVariables, getCountyData } from '../types/getCountyData';
-import { createRegionMap } from '../utils/data';
+import {
+  createRegionMap,
+  getCases,
+  getCasesPer1000,
+  getDeaths,
+  getDeathsPer1000,
+} from '../utils/data';
 import { NATION_ID } from '../utils/constants';
 import spinner from '../public/loading.svg';
-import { MinimalRegion, MapType } from '../types';
+import { MapType } from '../types';
 import { interpolateGreys, interpolateReds } from 'd3';
-
-const getCases = (region?: MinimalRegion) => region?.cases ?? 0;
-const getDeaths = (region?: MinimalRegion) => region?.deaths ?? 0;
-const getCasesPer1000 = (region?: MinimalRegion) =>
-  (getCases(region) / (region?.population ?? 1)) * 1000;
-const getDeathsPer1000 = (region?: MinimalRegion) =>
-  (getDeaths(region) / (region?.population ?? 1)) * 1000;
 
 const mapTypes: MapType[] = [
   {
@@ -170,10 +169,6 @@ function Index() {
 
           .container > .left {
             padding: 50px;
-          }
-
-          .container > div.sidebar {
-            overflow: hidden;
           }
         }
       `}</style>

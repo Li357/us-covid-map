@@ -3,7 +3,14 @@ import { Region, MinimalRegion } from '../types';
 import Stat from './Stat';
 import Card from './Card';
 import LineChart from './LineChart';
-import { processTimeline, formatNumber } from '../utils/data';
+import {
+  processTimeline,
+  formatNumber,
+  getCases,
+  getDeaths,
+  getCasesPer1000,
+  getDeathsPer1000,
+} from '../utils/data';
 import { useLazyQuery } from '@apollo/client';
 import { GET_COUNTY_DATA_BY_STATE } from '../queries';
 import { getCountyData, getCountyDataVariables } from '../types/getCountyData';
@@ -62,7 +69,7 @@ export default function Sidebar({ selectedRegion, view, onBlurState }: SidebarPr
             display: flex;
             align-items: center;
             justify-content: center;
-            flex: 0 0 450px;
+            flex-basis: 25%;
             padding: 50px;
           }
         `}</style>
@@ -82,8 +89,12 @@ export default function Sidebar({ selectedRegion, view, onBlurState }: SidebarPr
         </span>
       </div>
       <div className="stats">
-        <Stat color="red" title="Cases" value={formatNumber(region.cases)} />
-        <Stat color="gray" title="Deaths" value={formatNumber(region.deaths)} />
+        <Stat color="red" title="Cases" value={formatNumber(getCases(region))} />
+        <Stat color="gray" title="Deaths" value={formatNumber(getDeaths(region))} />
+      </div>
+      <div className="stats">
+        <Stat color="red" title="Cases / 1000" value={formatNumber(getCasesPer1000(region))} />
+        <Stat color="gray" title="Deaths / 1000" value={formatNumber(getDeathsPer1000(region))} />
       </div>
       <Card color="red">
         <LineChart
@@ -111,7 +122,6 @@ export default function Sidebar({ selectedRegion, view, onBlurState }: SidebarPr
           padding: 50px;
           display: flex;
           flex-direction: column;
-          overflow-y: scroll;
         }
 
         .name {
